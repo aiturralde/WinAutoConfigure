@@ -1,0 +1,210 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  discussions: write
+
+jobs:
+  create-release:
+    runs-on: windows-latest
+    name: Create Release Package
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        Write-Host "Preparing release environment..." -ForegroundColor Green
+        Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+
+    - name: Generate Release Notes
+      shell: pwsh
+      run: |
+        $tagName = "${{ github.event.inputs.tag_name || github.ref_name }}"
+        Write-Host "Generating release notes for: $tagName" -ForegroundColor Green
+        
+        # Get the latest tag (previous release)
+        $previousTag = git describe --tags --abbrev=0 HEAD^ 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            $previousTag = ""
+        }
+        
+        # Generate changelog
+        $changelog = @()
+        $changelog += "# WinAutoConfigure $tagName"
+        $changelog += ""
+        $changelog += "## 🚀 Release Highlights"
+        $changelog += ""
+        
+        if ($previousTag) {
+            Write-Host "Previous tag: $previousTag" -ForegroundColor Cyan
+            $commits = git log --pretty=format:"%h - %s" "$previousTag..HEAD"
+        }
+        else {
+            Write-Host "No previous tag found, using all commits" -ForegroundColor Cyan
+            $commits = git log --pretty=format:"%h - %s"
+        }
+        
+        if ($commits) {
+            $changelog += "### 📝 Changes"
+            $changelog += ""
+            foreach ($commit in $commits) {
+                $changelog += "- $commit"
+            }
+            $changelog += ""
+        }
+        
+        $changelog += "## 📦 Installation"
+        $changelog += ""
+        $changelog += "1. Download the latest release ZIP file"
+        $changelog += "2. Extract to your preferred location"
+        $changelog += "3. Run as Administrator: ``.\WinAutoConfigure.ps1``"
+        $changelog += ""
+        $changelog += "## 🔧 System Requirements"
+        $changelog += ""
+        $changelog += "- Windows 10/11"
+        $changelog += "- PowerShell 5.1 or PowerShell 7+"
+        $changelog += "- Administrator privileges"
+        $changelog += ""
+        $changelog += "## 📋 Features"
+        $changelog += ""
+        $changelog += "- ✅ Windows Terminal setup with custom profiles"
+        $changelog += "- ✅ Application installation via Winget"
+        $changelog += "- ✅ Windows settings optimization"
+        $changelog += "- ✅ Network security configuration"
+        $changelog += "- ✅ Development tools setup"
+        $changelog += "- ✅ Gaming optimizations"
+        $changelog += ""
+        $changelog += "---"
+        $changelog += "*Generated automatically on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*"
+        
+        $releaseNotes = $changelog -join "`n"
+        
+        # Save to file for upload
+        $releaseNotes | Out-File -FilePath "RELEASE_NOTES.md" -Encoding UTF8
+        
+        # Set output for GitHub
+        $releaseNotes | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding UTF8
+        "release_notes<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding UTF8
+        $releaseNotes | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding UTF8
+        "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding UTF8
+
+    - name: Create Release Package
+      shell: pwsh
+      run: |
+        $tagName = "${{ github.event.inputs.tag_name || github.ref_name }}"
+        $packageName = "WinAutoConfigure-$tagName"
+        
+        Write-Host "Creating release package: $packageName" -ForegroundColor Green
+        
+        # Create release directory
+        New-Item -ItemType Directory -Path "release" -Force
+        
+        # Copy core files
+        $filesToInclude = @(
+            "WinAutoConfigure.ps1",
+            "Utils.ps1",
+            "README.md",
+            "LICENSE",
+            "Config",
+            "Modules",
+            "Fonts"
+        )
+        
+        foreach ($item in $filesToInclude) {
+            if (Test-Path $item) {
+                if (Test-Path $item -PathType Container) {
+                    Copy-Item -Path $item -Destination "release\" -Recurse -Force
+                    Write-Host "  ✓ Copied directory: $item" -ForegroundColor Green
+                }
+                else {
+                    Copy-Item -Path $item -Destination "release\" -Force
+                    Write-Host "  ✓ Copied file: $item" -ForegroundColor Green
+                }
+            }
+            else {
+                Write-Host "  ⚠ Not found: $item" -ForegroundColor Yellow
+            }
+        }
+        
+        # Create installation script content
+        $installContent = @"
+        # WinAutoConfigure Installation Script
+        # Run this script as Administrator
+        
+        param([switch]`$RunImmediately)
+        
+        Write-Host `"=== WinAutoConfigure Installation ===`" -ForegroundColor Green
+        Write-Host `"Version: $tagName`"
+        Write-Host `"`"
+        
+        if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] `"Administrator`")) {
+            Write-Host `"❌ This script must be run as Administrator!`" -ForegroundColor Red
+            Write-Host `"Right-click PowerShell and select 'Run as Administrator'`" -ForegroundColor Yellow
+            exit 1
+        }
+        
+        Write-Host `"✅ Running as Administrator`" -ForegroundColor Green
+        
+        if (`$RunImmediately) {
+            Write-Host `"🚀 Starting WinAutoConfigure...`" -ForegroundColor Cyan
+            & `".\WinAutoConfigure.ps1`"
+        }
+        else {
+            Write-Host `"📂 Installation completed!`" -ForegroundColor Green
+            Write-Host `"To run WinAutoConfigure, execute: .\WinAutoConfigure.ps1`" -ForegroundColor Cyan
+        }
+        "@
+        
+        # Write installation script
+        $installContent | Out-File -FilePath "release\Install.ps1" -Encoding UTF8
+        
+        # Create ZIP package
+        Compress-Archive -Path "release\*" -DestinationPath "$packageName.zip" -Force
+        Write-Host "✅ Created package: $packageName.zip" -ForegroundColor Green
+        
+        # Verify package
+        $zipInfo = Get-Item "$packageName.zip"
+        Write-Host "Package size: $([math]::Round($zipInfo.Length / 1MB, 2)) MB" -ForegroundColor Cyan
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+        name: WinAutoConfigure ${{ github.event.inputs.tag_name || github.ref_name }}
+        body_path: RELEASE_NOTES.md
+        files: |
+          WinAutoConfigure-${{ github.event.inputs.tag_name || github.ref_name }}.zip
+        draft: false
+        prerelease: false
+        discussion_category_name: Releases
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Release Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-package-${{ github.event.inputs.tag_name || github.ref_name }}
+        path: |
+          WinAutoConfigure-${{ github.event.inputs.tag_name || github.ref_name }}.zip
+          RELEASE_NOTES.md
+        retention-days: 90

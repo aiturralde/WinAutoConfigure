@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 General Discussion
+    url: https://github.com/aiturralde/WinAutoConfigure/discussions
+    about: Ask questions, share ideas, or discuss the project in general
+  - name: 📧 Security Issues
+    url: mailto:aiturralde@example.com
+    about: Please report security vulnerabilities privately via email

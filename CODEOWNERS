@@ -1,0 +1,26 @@
+# CODEOWNERS file for WinAutoConfigure
+# This file defines who owns specific parts of the codebase
+# and who must review changes before they can be merged.
+
+# Global ownership - all files require approval from @aiturralde
+* @aiturralde
+
+# Core system files require extra scrutiny
+WinAutoConfigure.ps1 @aiturralde
+Utils.ps1 @aiturralde
+
+# Configuration files
+Config/ @aiturralde
+
+# Core modules that affect system functionality
+Modules/Common-*.psm1 @aiturralde
+Modules/Install-Applications.ps1 @aiturralde
+Modules/Configure-*.ps1 @aiturralde
+
+# Documentation and setup files
+README.md @aiturralde
+LICENSE @aiturralde
+.github/ @aiturralde
+
+# Security-sensitive files
+.github/workflows/ @aiturralde
