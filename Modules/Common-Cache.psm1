@@ -301,6 +301,7 @@ function Optimize-Cache {
 
 # Exportar funciones principales
 Export-ModuleMember -Function @(
+    'Initialize-CacheModule',
     'Get-CachedData',
     'Set-CachedData',
     'Clear-ModuleCache',

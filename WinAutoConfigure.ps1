@@ -20,55 +20,42 @@ param(
 # =====================================================================================
 
 # Importar módulos necesarios
-$ModulesPath = Join-Path $PSScriptRoot "modules"
+$ModulesPath = Join-Path $PSScriptRoot "Modules"
 
-# Cargar módulo de Logging
-. (Join-Path $ModulesPath "Logging.ps1")
+# Cargar módulos comunes
+Import-Module (Join-Path $ModulesPath "Common-Logging.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Common-Cache.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Common-Validation.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Common-ProgressTracking.psm1") -Force
 
-# Cargar módulo de Cache
-. (Join-Path $ModulesPath "Cache.ps1")
-
-# Cargar módulo de Progress Tracking
-. (Join-Path $ModulesPath "ProgressTracking.ps1")
-
-# Cargar módulo de System Validation
-. (Join-Path $ModulesPath "SystemValidation.ps1")
+# Inicializar módulos
+Initialize-CacheModule
+Initialize-ValidationModule
+Initialize-ProgressModule
 
 # =====================================================================================
 # CLASE PRINCIPAL
 # =====================================================================================
 
 class WinAutoConfiguration {
-    [object]$Logger
-    [object]$Cache
-    [object]$ProgressTracker
-    [object]$Validator
     [string]$ConfigPath
     [string]$ModulesPath
     [int]$CurrentStep
 
     # Constructor
     WinAutoConfiguration([string]$RootPath) {
-        $this.ConfigPath = Join-Path $RootPath "config"
-        $this.ModulesPath = Join-Path $RootPath "modules"
+        $this.ConfigPath = Join-Path $RootPath "Config"
+        $this.ModulesPath = Join-Path $RootPath "Modules"
         $this.CurrentStep = 1
     }
 
     [bool] Initialize() {
         try {
-            # Inicializar Logger
-            $this.Logger = [Logger]::new((Join-Path $this.ConfigPath "logs"))
-            $this.Logger.LogInfo("Inicializando WinAutoConfiguration v3.0")
+            # Inicializar logging
+            Write-Log "Inicializando WinAutoConfiguration v3.0" -Level "INFO"
             
-            # Inicializar Cache
-            $this.Cache = [CacheManager]::new((Join-Path $this.ConfigPath "cache"))
-            
-            # Inicializar Progress Tracker
-            $this.ProgressTracker = [ProgressTracker]::new((Join-Path $this.ConfigPath "progress.json"))
-            $this.CurrentStep = $this.ProgressTracker.GetCurrentStep()
-            
-            # Inicializar System Validator
-            $this.Validator = [SystemValidator]::new()
+            # Obtener paso actual desde el módulo de progreso
+            $this.CurrentStep = Get-CurrentStep
             
             return $true
         }
@@ -80,43 +67,42 @@ class WinAutoConfiguration {
 
     [bool] ValidateEnvironment() {
         try {
-            $this.Logger.LogInfo("Validando entorno del sistema...")
+            Write-Log "Validando entorno del sistema..." -Level "INFO"
             
-            # Verificar permisos de administrador
-            if (-not $this.Validator.IsAdministrator()) {
-                $this.Logger.LogError("Se requieren permisos de administrador")
+            # Usar las funciones del módulo de validación
+            $requirements = Test-SystemRequirements
+            
+            if (-not $requirements.AdminRights) {
+                Write-Log "Se requieren permisos de administrador" -Level "ERROR"
                 return $false
             }
             
-            # Verificar versión de PowerShell
-            if (-not $this.Validator.ValidatePowerShellVersion()) {
-                $this.Logger.LogError("Se requiere PowerShell 5.1 o superior")
+            if (-not $requirements.PowerShellVersion) {
+                Write-Log "Se requiere PowerShell 5.1 o superior" -Level "ERROR"
                 return $false
             }
             
-            # Verificar versión de Windows
-            if (-not $this.Validator.ValidateWindowsVersion()) {
-                $this.Logger.LogError("Se requiere Windows 10 v1909 o superior")
+            if (-not $requirements.WindowsVersion) {
+                Write-Log "Se requiere Windows 10 v1909 o superior" -Level "ERROR"
                 return $false
             }
             
-            # Verificar espacio en disco
-            if (-not $this.Validator.ValidateDiskSpace()) {
-                $this.Logger.LogWarning("Poco espacio en disco disponible")
+            if (-not $requirements.DiskSpace) {
+                Write-Log "Poco espacio en disco disponible" -Level "WARNING"
             }
             
-            return $true
+            return $requirements.OverallStatus
         }
         catch {
-            $this.Logger.LogError("Error durante validación: $($_.Exception.Message)")
+            Write-Log "Error durante validación: $($_.Exception.Message)" -Level "ERROR"
             return $false
         }
     }
 
     [void] SetProgress([int]$StepNumber) {
         $this.CurrentStep = $StepNumber
-        $this.ProgressTracker.SetCurrentStep($StepNumber)
-        $this.Logger.LogInfo("Progreso actualizado: Paso $StepNumber")
+        Set-CurrentStep -StepNumber $StepNumber
+        Write-Log "Progreso actualizado: Paso $StepNumber" -Level "INFO"
     }
 
     [void] ShowProgressStatus() {
@@ -129,8 +115,9 @@ class WinAutoConfiguration {
             "6. Configuracion Gaming (Optimizaciones)"
         )
         
+        $progressSummary = Get-ProgressSummary
         $currentIndex = if ($this.CurrentStep -eq 7 -or $this.CurrentStep -gt 6) { $steps.Count } else { $this.CurrentStep - 1 }
-        $percentage = [math]::Round((($currentIndex) / $steps.Count) * 100, 1)
+        $percentage = $progressSummary.PercentageComplete
         
         Write-Host "`n" -ForegroundColor Green
         Write-Host "===============================================================" -ForegroundColor Green
@@ -144,7 +131,8 @@ class WinAutoConfiguration {
         }
         
         for ($i = 0; $i -lt $steps.Count; $i++) {
-            if ($this.CurrentStep -eq 7 -or $this.CurrentStep -gt 6 -or $i -lt $currentIndex) {
+            $stepCompleted = Test-StepCompleted -StepNumber ($i + 1)
+            if ($this.CurrentStep -eq 7 -or $this.CurrentStep -gt 6 -or $stepCompleted) {
                 $status = "[X]"
                 $color = "Green"
             } elseif ($i -eq $currentIndex -and $this.CurrentStep -ne 7) {
@@ -163,7 +151,7 @@ class WinAutoConfiguration {
 
     [bool] ExecuteStep([int]$StepNumber) {
         if ($StepNumber -lt 1 -or $StepNumber -gt 6) {
-            $this.Logger.LogError("Número de paso inválido: $StepNumber")
+            Write-Log "Número de paso inválido: $StepNumber" -Level "ERROR"
             return $false
         }
         
@@ -180,10 +168,10 @@ class WinAutoConfiguration {
         $modulePath = Join-Path $this.ModulesPath $stepInfo.Module
         
         try {
-            $this.Logger.LogInfo("Ejecutando paso $StepNumber : $($stepInfo.Module)")
+            Write-Log "Ejecutando paso $StepNumber : $($stepInfo.Module)" -Level "INFO"
             
             if (-not (Test-Path $modulePath)) {
-                $this.Logger.LogError("Módulo no encontrado: $modulePath")
+                Write-Log "Módulo no encontrado: $modulePath" -Level "ERROR"
                 return $false
             }
             
@@ -192,29 +180,32 @@ class WinAutoConfiguration {
             if (Get-Command $stepInfo.Function -ErrorAction SilentlyContinue) {
                 $result = & $stepInfo.Function
                 if ($result) {
+                    Add-CompletedStep -StepNumber $StepNumber
                     $this.SetProgress($StepNumber + 1)
                     return $true
                 } else {
+                    Add-ErrorCount
                     return $false
                 }
             } else {
-                $this.Logger.LogError("Función no encontrada: $($stepInfo.Function)")
+                Write-Log "Función no encontrada: $($stepInfo.Function)" -Level "ERROR"
                 return $false
             }
         }
         catch {
-            $this.Logger.LogError("Error ejecutando paso $StepNumber : $($_.Exception.Message)")
+            Write-Log "Error ejecutando paso $StepNumber : $($_.Exception.Message)" -Level "ERROR"
+            Add-ErrorCount
             return $false
         }
     }
     
     [bool] ExecuteAllSteps() {
-        $this.Logger.LogInfo("Iniciando ejecución completa de WinAutoConfigure")
+        Write-Log "Iniciando ejecución completa de WinAutoConfigure" -Level "INFO"
         
         # Ejecutar desde el paso actual hasta el final
         for ($step = $this.CurrentStep; $step -le 6; $step++) {
             if (-not $this.ExecuteStep($step)) {
-                $this.Logger.LogError("Ejecución detenida en el paso $step")
+                Write-Log "Ejecución detenida en el paso $step" -Level "ERROR"
                 return $false
             }
             
@@ -226,19 +217,19 @@ class WinAutoConfiguration {
         $uiHelpersPath = Join-Path $this.ModulesPath "UI-Helpers.ps1"
         if (Test-Path $uiHelpersPath) {
             try {
-                $this.Logger.LogInfo("Cargando módulos auxiliares...")
+                Write-Log "Cargando módulos auxiliares..." -Level "INFO"
                 . $uiHelpersPath
                 if (Get-Command "Initialize-UIHelpersModule" -ErrorAction SilentlyContinue) {
                     Initialize-UIHelpersModule
                 }
             }
             catch {
-                $this.Logger.LogWarning("Error cargando UI-Helpers: $($_.Exception.Message)")
+                Write-Log "Error cargando UI-Helpers: $($_.Exception.Message)" -Level "WARNING"
             }
         }
         
         $this.SetProgress(7)  # Marcar como completado
-        $this.Logger.LogInfo("=== ¡Configuración completada exitosamente! ===")
+        Write-Log "=== ¡Configuración completada exitosamente! ===" -Level "INFO"
         return $true
     }
 }
@@ -328,8 +319,8 @@ if (-not $winAutoConfig.ValidateEnvironment()) {
 
 # Limpiar cache si se solicita
 if ($ForceRefresh) {
-    $winAutoConfig.Logger.LogInfo("Limpiando cache...")
-    $winAutoConfig.Cache.Clear("*")
+    Write-Log "Limpiando cache..." -Level "INFO"
+    Clear-ModuleCache -ModuleName "*"
 }
 
 # Ejecutar paso específico o todos los pasos
@@ -355,7 +346,8 @@ try {
     Write-Host "Para ver el estado: .\WinAutoConfigure.ps1 -ShowStatus" -ForegroundColor Cyan
     
 } catch {
-    $winAutoConfig.Logger.LogError("Error durante ejecucion: $($_.Exception.Message)")
+    Write-Log "Error durante ejecucion: $($_.Exception.Message)" -Level "ERROR"
+    Add-ErrorCount
     Write-Error "Error durante la ejecucion. Consulte los logs para mas detalles."
     exit 1
 }

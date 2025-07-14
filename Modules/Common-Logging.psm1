@@ -72,12 +72,12 @@ function Write-Log {
     # Detectar componente automáticamente si no se especifica
     if ([string]::IsNullOrEmpty($Component)) {
         $callStack = Get-PSCallStack
-        if ($callStack.Count -gt 1) {
+        if ($callStack.Count -gt 1 -and $callStack[1].ScriptName) {
             $callerFile = Split-Path -Leaf $callStack[1].ScriptName
             $Component = $callerFile -replace '\.ps1$', ''
         }
         else {
-            $Component = "Main"
+            $Component = "WinAutoConfigure"
         }
     }
     

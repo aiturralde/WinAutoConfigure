@@ -17,14 +17,33 @@ function Initialize-ValidationModule {
     param()
     
     try {
-        $script:CommonSettings = Get-Content (Join-Path $PSScriptRoot "..\Config\common-settings.json") -Raw | ConvertFrom-Json
-        $script:MasterConfig = Get-Content (Join-Path $PSScriptRoot "..\Config\master-config.json") -Raw | ConvertFrom-Json
+        $configPath = Join-Path $PSScriptRoot "..\Config"
+        $commonSettingsPath = Join-Path $configPath "common-settings.json"
+        $masterConfigPath = Join-Path $configPath "master-config.json"
+        
+        if (Test-Path $commonSettingsPath) {
+            $script:CommonSettings = Get-Content $commonSettingsPath -Raw | ConvertFrom-Json
+        } else {
+            Write-Warning "Archivo common-settings.json no encontrado, usando configuración por defecto"
+            $script:CommonSettings = @{}
+        }
+        
+        if (Test-Path $masterConfigPath) {
+            $script:MasterConfig = Get-Content $masterConfigPath -Raw | ConvertFrom-Json
+        } else {
+            Write-Warning "Archivo master-config.json no encontrado, usando configuración por defecto"
+            $script:MasterConfig = @{}
+        }
+        
         Write-Verbose "Módulo de validación inicializado correctamente"
         return $true
     }
     catch {
-        Write-Error "Error inicializando módulo de validación: $($_.Exception.Message)"
-        return $false
+        Write-Warning "Error inicializando módulo de validación: $($_.Exception.Message)"
+        # Inicializar con valores por defecto
+        $script:CommonSettings = @{}
+        $script:MasterConfig = @{}
+        return $true  # No fallar completamente
     }
 }
 
@@ -278,6 +297,7 @@ function Invoke-CompleteValidation {
 
 # Exportar funciones principales
 Export-ModuleMember -Function @(
+    'Initialize-ValidationModule',
     'Test-SystemRequirements',
     'Test-ConfigurationFiles', 
     'Test-ModuleDependencies',
