@@ -1,0 +1,48 @@
+{
+  "userName": "Tu Nombre",
+  "userEmail": "tu.email@ejemplo.com",
+  "defaultBranch": "main",
+  "aliases": {
+    "st": "status",
+    "co": "checkout",
+    "br": "branch",
+    "ci": "commit",
+    "lol": "log --oneline --graph --decorate --all",
+    "unstage": "reset HEAD --",
+    "last": "log -1 HEAD",
+    "visual": "!gitk"
+  },
+  "push": {
+    "default": "simple",
+    "autoSetupRemote": true,
+    "followTags": true
+  },
+  "pull": {
+    "rebase": false,
+    "prune": true
+  },
+  "init": {
+    "defaultBranch": "main"
+  },
+  "core": {
+    "autocrlf": true,
+    "editor": "code --wait",
+    "longpaths": true
+  },
+  "merge": {
+    "tool": "vscode"
+  },
+  "mergetool": {
+    "vscode": {
+      "cmd": "code --wait $MERGED"
+    }
+  },
+  "diff": {
+    "tool": "vscode"
+  },
+  "difftool": {
+    "vscode": {
+      "cmd": "code --wait --diff $LOCAL $REMOTE"
+    }
+  }
+}

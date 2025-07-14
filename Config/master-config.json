@@ -1,0 +1,70 @@
+{
+  "master_configuration": {
+    "version": "2.1",
+    "last_updated": "2025-07-14",
+    "execution_mode": "sequential"
+  },
+  "modules": {
+    "terminal": {
+      "enabled": true,
+      "step": 1,
+      "name": "Setup-WindowsTerminal",
+      "config_file": "terminal-settings.json",
+      "requires_restart": false,
+      "estimated_time_minutes": 3
+    },
+    "applications": {
+      "enabled": true,
+      "step": 2,
+      "name": "Install-Applications",
+      "config_file": "applications.json",
+      "requires_restart": false,
+      "estimated_time_minutes": 15
+    },
+    "windows_settings": {
+      "enabled": true,
+      "step": 3,
+      "name": "Configure-WindowsSettings",
+      "config_file": null,
+      "requires_restart": false,
+      "estimated_time_minutes": 5
+    },
+    "network_security": {
+      "enabled": true,
+      "step": 4,
+      "name": "Configure-NetworkSecurity",
+      "config_file": null,
+      "requires_restart": false,
+      "estimated_time_minutes": 3
+    },
+    "development_tools": {
+      "enabled": true,
+      "step": 5,
+      "name": "Configure-DevelopmentTools",
+      "config_file": "git-config.json",
+      "requires_restart": false,
+      "estimated_time_minutes": 5
+    },
+    "gaming": {
+      "enabled": true,
+      "step": 6,
+      "name": "Configure-Gaming",
+      "config_file": "gaming-config.json",
+      "requires_restart": false,
+      "estimated_time_minutes": 4
+    }
+  },
+  "execution_order": [1, 2, 3, 4, 5, 6],
+  "optional_modules": {
+    "ui_helpers": {
+      "enabled": true,
+      "auto_load": true,
+      "load_after_completion": true
+    }
+  },
+  "global_dependencies": [
+    "Common-Logging.psm1",
+    "Common-Validation.psm1",
+    "Common-Cache.psm1"
+  ]
+}

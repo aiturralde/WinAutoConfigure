@@ -1,0 +1,35 @@
+{
+  "gaming_settings": {
+    "enable_game_mode": true,
+    "disable_game_bar": false,
+    "enable_hardware_acceleration": true,
+    "create_gaming_power_plan": true,
+    "configure_network_optimizations": true,
+    "apply_performance_optimizations": true
+  },
+  "performance_settings": {
+    "disable_windows_search_during_gaming": true,
+    "optimize_memory_management": true,
+    "configure_multimedia_class_scheduler": true,
+    "set_high_performance_gpu_priority": true,
+    "configure_tcp_optimizations": true,
+    "disable_nagle_algorithm": true
+  },
+  "compatibility_settings": {
+    "enable_directplay": true,
+    "enable_dotnet_framework_35": true,
+    "add_gaming_folders_to_defender_exclusions": true
+  },
+  "power_management": {
+    "create_custom_gaming_plan": true,
+    "disable_usb_selective_suspend": true,
+    "prevent_system_sleep": true,
+    "prevent_disk_timeout": true
+  },
+  "notes": {
+    "description": "Configuración gaming optimizada para Windows 11",
+    "requires_admin": true,
+    "requires_restart": "partial",
+    "optimized_for": "high_performance_gaming_pc"
+  }
+}

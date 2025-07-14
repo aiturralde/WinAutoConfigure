@@ -1,0 +1,36 @@
+{
+  "applications": {
+    "7zip.7zip": true,
+    "Git.Git": true,
+    "SteelSeries.GG": true,
+    "Microsoft.AzureCLI": true,
+    "JanDeDobbeleer.OhMyPosh": true,
+    "Romanitho.Winget-AutoUpdate": true,
+    "OpenJS.NodeJS": true,
+    "Logitech.GHUB": true,
+    "Elgato.StreamDeck": true,
+    "Microsoft.PowerShell": true,
+    "CodecGuide.K-LiteCodecPack.Full": true,
+    "Valve.Steam": true,
+    "EpicGames.EpicGamesLauncher": true,
+    "Blitz.Blitz": true,
+    "Discord.Discord": true,
+    "Microsoft.Bicep": true,
+    "Microsoft.VisualStudioCode": true
+  },
+  "windows_features": {
+    "Microsoft-Hyper-V-All": false,
+    "VirtualMachinePlatform": false,
+    "Microsoft-Windows-Subsystem-Linux": false,
+    "Containers": false
+  },
+  "settings": {
+    "continue_on_error": true,
+    "create_restore_point": false,
+    "log_installations": true,
+    "accept-source-agreements": true,
+    "accept-package-agreements": true,
+    "silent": true,
+    "install_windows_features": true
+  }
+}

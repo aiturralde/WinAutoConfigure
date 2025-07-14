@@ -1,0 +1,36 @@
+{
+  "project_info": {
+    "name": "WinAutoConfigure",
+    "version": "2.1",
+    "total_steps": 6,
+    "author": "Andres Iturralde",
+    "description": "Automatización completa para Windows 11"
+  },
+  "system_requirements": {
+    "windows_version": "11",
+    "powershell_version": "5.1",
+    "admin_required": true,
+    "minimum_ram_gb": 8,
+    "minimum_disk_space_gb": 5
+  },
+  "default_paths": {
+    "logs": "Logs",
+    "modules": "Modules",
+    "config": "Config",
+    "fonts": "Fonts",
+    "cache": "Cache"
+  },
+  "global_settings": {
+    "max_retries": 3,
+    "timeout_seconds": 300,
+    "create_backups": true,
+    "verbose_logging": true,
+    "continue_on_error": true
+  },
+  "ui_settings": {
+    "show_progress_bar": true,
+    "use_colors": true,
+    "animation_speed": "normal",
+    "confirmation_prompts": false
+  }
+}

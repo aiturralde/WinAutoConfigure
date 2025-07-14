@@ -1,0 +1,218 @@
+# =====================================================================================
+# WinAutoConfigure - Archivos a ignorar en Git
+# =====================================================================================
+
+# =====================================================================================
+# DIRECTORIOS ESPECÍFICOS DE WINAUTOCONFIGURE
+# =====================================================================================
+
+# Cache del sistema - contiene datos temporales y configuraciones cacheadas
+cache/
+Cache/
+config/cache/
+**/cache/
+**/Cache/
+
+# Logs del sistema - contiene logs de ejecución y errores
+logs/
+Logs/
+config/logs/
+**/logs/
+**/Logs/
+
+# Archivos de progreso y estado temporal
+config/progress.json
+**/progress.json
+
+# Archivos de configuración temporal generados dinámicamente
+config/temp/
+**/temp/
+
+# =====================================================================================
+# VISUAL STUDIO CODE
+# =====================================================================================
+
+# Configuración del workspace (mantener solo configuración base)
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Archivos temporales de VSCode
+.vscode-test/
+*.code-workspace
+
+# =====================================================================================
+# POWERSHELL
+# =====================================================================================
+
+# Archivos de historial de PowerShell
+ConsoleHost_history.txt
+PSReadLine_history.txt
+
+# Archivos de sesión de PowerShell
+*.pssc
+
+# Módulos descargados automáticamente
+Modules/Downloaded/
+**/Downloaded/
+
+# Archivos de depuración de PowerShell
+*.pdb
+*.iobj
+*.ipdb
+
+# Archivos de resultado de pruebas de PowerShell
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# PowerShell Gallery cache
+PSGalleryModuleCache/
+
+# =====================================================================================
+# WINDOWS
+# =====================================================================================
+
+# Archivos de sistema Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+
+# Archivos de carpeta Windows
+Desktop.ini
+$RECYCLE.BIN/
+
+# Archivos de Windows Installer
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# =====================================================================================
+# ARCHIVOS TEMPORALES GENERALES
+# =====================================================================================
+
+# Archivos de backup
+*.bak
+*.backup
+*~
+
+# Archivos temporales de editores
+*.swp
+*.swo
+*~
+
+# Archivos de logs generales
+*.log
+*.log.*
+
+# Archivos comprimidos temporales
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+
+# =====================================================================================
+# ARCHIVOS DE CONFIGURACIÓN SENSIBLES
+# =====================================================================================
+
+# Archivos de configuración con información sensible
+.env
+.env.local
+.env.production
+.env.staging
+
+# Certificados y claves
+*.pfx
+*.p12
+*.key
+*.pem
+*.crt
+*.cer
+
+# Archivos de credenciales
+credentials.json
+secrets.json
+api-keys.txt
+
+# =====================================================================================
+# ARCHIVOS DE DESARROLLO Y DEPURACIÓN
+# =====================================================================================
+
+# Archivos de depuración
+debug/
+Debug/
+*.dmp
+
+# Archivos de output temporal
+output/
+Output/
+out/
+Out/
+
+# Archivos de build temporal
+build/
+Build/
+dist/
+Dist/
+
+# =====================================================================================
+# ARCHIVOS DE SISTEMA Y METADATOS
+# =====================================================================================
+
+# macOS (en caso de desarrollo multiplataforma)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# Archivos de versión temporal
+version.txt
+VERSION
+.version
+
+# =====================================================================================
+# CONFIGURACIONES ESPECÍFICAS DEL PROYECTO
+# =====================================================================================
+
+# Archivos de configuración de usuario específicos
+user-config.json
+local-settings.json
+personal-preferences.json
+
+# Reportes generados automáticamente
+reports/
+Reports/
+*.report
+*.rpt
+
+# Archivos de instalación temporal
+setup/temp/
+install/temp/
+download/temp/
+
+# =====================================================================================
+# EXCLUIR DIRECTORIOS PERO MANTENER ESTRUCTURA
+# =====================================================================================
+
+# Mantener estructura de directorios pero ignorar contenido
+logs/.gitkeep
+!logs/.gitkeep
+cache/.gitkeep
+!cache/.gitkeep
+
+# =====================================================================================
+# NOTA: Para mantener directorios vacíos, crear archivos .gitkeep
+# Ejemplo: echo $null > cache/.gitkeep
+# =====================================================================================
