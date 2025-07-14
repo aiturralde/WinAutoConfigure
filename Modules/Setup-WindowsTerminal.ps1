@@ -373,41 +373,102 @@ Write-Host ""
         }
     }
     
-    # Crear perfil para Windows PowerShell (usuario actual)
-    $profilePath = $PROFILE.CurrentUserAllHosts
-    $profileDir = Split-Path $profilePath -Parent
-    
-    # Asegurar que el directorio del perfil existe
-    if (-not (Test-Path $profileDir)) {
-        Write-Log "Creando directorio de perfil de PowerShell: $profileDir" -Level "INFO"
-        New-Item -Path $profileDir -ItemType Directory -Force | Out-Null
-        Write-Log "Directorio de perfil creado exitosamente" -Level "SUCCESS"
-    }
-    
-    try {
-        Set-Content -Path $profilePath -Value $profileContent -Encoding UTF8
-        Write-Log "Perfil de PowerShell configurado en: $profilePath"
+    # Función auxiliar para crear perfil de manera robusta
+    function Set-ProfileSafely {
+        param(
+            [string]$ProfilePath,
+            [string]$ProfileType,
+            [string]$Content
+        )
         
-        # También crear para PowerShell Core si está disponible
-        if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-            $coreProfilePath = "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
-            $coreProfileDir = Split-Path $coreProfilePath -Parent
+        try {
+            Write-Log "Configurando perfil de $ProfileType..."
+            Write-Log "Ruta objetivo: $ProfilePath"
             
-            # Asegurar que el directorio del perfil de PowerShell Core existe
-            if (-not (Test-Path $coreProfileDir)) {
-                Write-Log "Creando directorio de perfil de PowerShell Core: $coreProfileDir" -Level "INFO"
-                New-Item -Path $coreProfileDir -ItemType Directory -Force | Out-Null
-                Write-Log "Directorio de perfil de PowerShell Core creado exitosamente" -Level "SUCCESS"
+            # Obtener directorio del perfil
+            $profileDir = Split-Path $ProfilePath -Parent
+            Write-Log "Directorio objetivo: $profileDir"
+            
+            # Crear directorio si no existe (con validación robusta)
+            if (-not (Test-Path $profileDir)) {
+                Write-Log "Directorio del perfil no existe, creando: $profileDir" -Level "INFO"
+                try {
+                    New-Item -Path $profileDir -ItemType Directory -Force -ErrorAction Stop | Out-Null
+                    Write-Log "Directorio creado exitosamente: $profileDir" -Level "SUCCESS"
+                    
+                    # Verificar que se creó correctamente
+                    if (-not (Test-Path $profileDir)) {
+                        throw "El directorio no se pudo crear correctamente"
+                    }
+                }
+                catch {
+                    Write-Log "Error crítico creando directorio: $($_.Exception.Message)" -Level "ERROR"
+                    return $false
+                }
+            }
+            else {
+                Write-Log "Directorio del perfil ya existe: $profileDir"
             }
             
-            Set-Content -Path $coreProfilePath -Value $profileContent -Encoding UTF8
-            Write-Log "Perfil de PowerShell Core configurado en: $coreProfilePath"
+            # Crear archivo de perfil
+            try {
+                Set-Content -Path $ProfilePath -Value $Content -Encoding UTF8 -Force -ErrorAction Stop
+                Write-Log "Perfil de $ProfileType configurado exitosamente en: $ProfilePath" -Level "SUCCESS"
+                
+                # Verificar que el archivo se creó correctamente
+                if (Test-Path $ProfilePath) {
+                    $fileSize = (Get-Item $ProfilePath).Length
+                    Write-Log "Archivo creado correctamente. Tamaño: $fileSize bytes"
+                    return $true
+                }
+                else {
+                    throw "El archivo de perfil no se creó correctamente"
+                }
+            }
+            catch {
+                Write-Log "Error escribiendo archivo de perfil: $($_.Exception.Message)" -Level "ERROR"
+                return $false
+            }
         }
-        
-        return $true
+        catch {
+            Write-Log "Error general configurando perfil de $($ProfileType): $($_.Exception.Message)" -Level "ERROR"
+            return $false
+        }
     }
-    catch {
-        Write-Log "Error configurando perfil de PowerShell: $($_.Exception.Message)" -Level "ERROR"
-        return $false
+    
+    $success = $true
+    
+    # Configurar perfil para Windows PowerShell (5.1)
+    $windowsPowerShellProfile = $PROFILE.CurrentUserAllHosts
+    if ($windowsPowerShellProfile) {
+        Write-Log "Detectado Windows PowerShell. Configurando perfil..." 
+        $result = Set-ProfileSafely -ProfilePath $windowsPowerShellProfile -ProfileType "Windows PowerShell" -Content $profileContent
+        if (-not $result) {
+            $success = $false
+            Write-Log "Fallo al configurar perfil de Windows PowerShell" -Level "ERROR"
+        }
     }
+    
+    # Configurar perfil para PowerShell Core (7.x) si está disponible
+    if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+        Write-Log "Detectado PowerShell Core. Configurando perfil..."
+        $coreProfilePath = "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
+        $result = Set-ProfileSafely -ProfilePath $coreProfilePath -ProfileType "PowerShell Core" -Content $profileContent
+        if (-not $result) {
+            $success = $false
+            Write-Log "Fallo al configurar perfil de PowerShell Core" -Level "ERROR"
+        }
+    }
+    else {
+        Write-Log "PowerShell Core no detectado, omitiendo configuración de perfil Core"
+    }
+    
+    if ($success) {
+        Write-Log "Configuración de perfiles PowerShell completada exitosamente" -Level "SUCCESS"
+    }
+    else {
+        Write-Log "Hubo errores configurando algunos perfiles PowerShell" -Level "WARNING"
+    }
+    
+    return $success
 }

@@ -13,6 +13,9 @@ function Initialize-WindowsSettingsModule {
     
     Write-Log "Iniciando configuración de ajustes de Windows 11..."
     
+    # Paso 0: Instalar módulos de PowerShell necesarios
+    Install-PowerShellModules
+    
     # Paso 1: Configurar ajustes regionales
     Set-RegionalSettings
     
@@ -30,6 +33,47 @@ function Initialize-WindowsSettingsModule {
     
     Write-Log "Configuración de Windows 11 completada"
     return $true
+}
+
+function Install-PowerShellModules {
+    Write-Log "Instalando módulos de PowerShell necesarios..."
+    
+    try {
+        # Lista de módulos requeridos por el perfil de PowerShell
+        $RequiredModules = @(
+            "Terminal-Icons",
+            "PSReadLine"
+        )
+        
+        foreach ($Module in $RequiredModules) {
+            Write-Log "Verificando módulo: $Module"
+            
+            # Verificar si el módulo ya está instalado
+            $InstalledModule = Get-Module -ListAvailable -Name $Module
+            
+            if (-not $InstalledModule) {
+                Write-Log "Instalando módulo: $Module"
+                Install-Module -Name $Module -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+                Write-Log "Módulo $Module instalado correctamente"
+            } else {
+                Write-Log "Módulo $Module ya está instalado (Versión: $($InstalledModule.Version))"
+            }
+        }
+        
+        # Verificar oh-my-posh (se instala como aplicación, no como módulo)
+        $OhMyPoshPath = "$env:LOCALAPPDATA\Programs\oh-my-posh\oh-my-posh.exe"
+        if (-not (Test-Path $OhMyPoshPath)) {
+            Write-Log "oh-my-posh no encontrado. Se instalará con las aplicaciones en el paso correspondiente."
+        } else {
+            Write-Log "oh-my-posh ya está instalado"
+        }
+        
+        Write-Log "Instalación de módulos de PowerShell completada"
+    }
+    catch {
+        Write-Log "Error al instalar módulos de PowerShell: $_" -Level "ERROR"
+        throw
+    }
 }
 
 function Set-RegionalSettings {
