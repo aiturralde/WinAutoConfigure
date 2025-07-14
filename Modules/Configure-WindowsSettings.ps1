@@ -39,7 +39,46 @@ function Install-PowerShellModules {
     Write-Log "Instalando módulos de PowerShell necesarios..."
     
     try {
-        # Lista de módulos requeridos por el perfil de PowerShell
+        # Paso 1: Actualizar PowerShellGet para evitar problemas de instalación
+        Write-Log "Verificando y actualizando PowerShellGet..."
+        $PowerShellGetVersion = Get-Module -ListAvailable -Name PowerShellGet | Sort-Object Version -Descending | Select-Object -First 1
+        Write-Log "PowerShellGet actual: $($PowerShellGetVersion.Version)"
+        
+        try {
+            # Intentar actualizar PowerShellGet si es necesario
+            $LatestPSGet = Find-Module -Name PowerShellGet -ErrorAction SilentlyContinue
+            if ($LatestPSGet -and $LatestPSGet.Version -gt $PowerShellGetVersion.Version) {
+                Write-Log "Actualizando PowerShellGet a versión $($LatestPSGet.Version)..."
+                Install-Module -Name PowerShellGet -Force -AllowClobber -Scope CurrentUser -ErrorAction SilentlyContinue
+                Write-Log "PowerShellGet actualizado correctamente"
+            }
+        }
+        catch {
+            Write-Log "No se pudo actualizar PowerShellGet, continuando con versión actual: $($_.Exception.Message)" -Level "WARNING"
+        }
+        
+        # Paso 2: Verificar y configurar repositorio PSGallery
+        Write-Log "Verificando repositorio PSGallery..."
+        try {
+            $PSGallery = Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue
+            if (-not $PSGallery) {
+                Write-Log "Registrando repositorio PSGallery..."
+                Register-PSRepository -Default -ErrorAction Stop
+                Write-Log "Repositorio PSGallery registrado correctamente"
+            } else {
+                Write-Log "Repositorio PSGallery ya está registrado"
+                if ($PSGallery.InstallationPolicy -ne "Trusted") {
+                    Write-Log "Configurando PSGallery como repositorio confiable..."
+                    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+                }
+            }
+        }
+        catch {
+            Write-Log "Error configurando PSGallery: $($_.Exception.Message)" -Level "WARNING"
+            Write-Log "Continuando con configuración estándar de repositorios..."
+        }
+        
+        # Paso 3: Lista de módulos requeridos por el perfil de PowerShell
         $RequiredModules = @(
             "Terminal-Icons",
             "PSReadLine"
@@ -53,8 +92,52 @@ function Install-PowerShellModules {
             
             if (-not $InstalledModule) {
                 Write-Log "Instalando módulo: $Module"
-                Install-Module -Name $Module -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
-                Write-Log "Módulo $Module instalado correctamente"
+                
+                # Intentar instalación con reintentos
+                $MaxRetries = 3
+                $RetryCount = 0
+                $InstallSuccess = $false
+                
+                while ($RetryCount -lt $MaxRetries -and -not $InstallSuccess) {
+                    try {
+                        $RetryCount++
+                        Write-Log "Intento $RetryCount de $MaxRetries para instalar $Module"
+                        
+                        # Intentar instalación con diferentes estrategias
+                        if ($Module -eq "Terminal-Icons") {
+                            # Primero intentar con PSGallery explícito
+                            try {
+                                Write-Log "Intentando instalar $Module desde PSGallery..."
+                                Install-Module -Name $Module -Repository PSGallery -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+                            }
+                            catch {
+                                Write-Log "Fallo instalación desde PSGallery, intentando instalación estándar: $($_.Exception.Message)" -Level "WARNING"
+                                Install-Module -Name $Module -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+                            }
+                        } else {
+                            Install-Module -Name $Module -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+                        }
+                        
+                        # Verificar que se instaló correctamente
+                        $VerifyModule = Get-Module -ListAvailable -Name $Module
+                        if ($VerifyModule) {
+                            Write-Log "Módulo $Module instalado correctamente (Versión: $($VerifyModule.Version))"
+                            $InstallSuccess = $true
+                        }
+                    }
+                    catch {
+                        Write-Log "Error en intento $RetryCount para $Module : $($_.Exception.Message)" -Level "WARNING"
+                        if ($RetryCount -lt $MaxRetries) {
+                            Write-Log "Reintentando en 2 segundos..."
+                            Start-Sleep -Seconds 2
+                        }
+                    }
+                }
+                
+                if (-not $InstallSuccess) {
+                    Write-Log "No se pudo instalar el módulo $Module después de $MaxRetries intentos" -Level "ERROR"
+                    throw "Error crítico: No se pudo instalar $Module"
+                }
             } else {
                 Write-Log "Módulo $Module ya está instalado (Versión: $($InstalledModule.Version))"
             }
