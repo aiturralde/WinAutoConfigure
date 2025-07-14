@@ -1,17 +1,17 @@
 <#
 .SYNOPSIS
-    Módulo para la instalación y configuración de Windows Terminal
+    Modulo para la instalacion y configuracion de Windows Terminal
 .DESCRIPTION
-    Este módulo instala Windows Terminal desde Microsoft Store y aplica configuraciones personalizadas
+    Este modulo instala Windows Terminal desde Microsoft Store y aplica configuraciones personalizadas
 .NOTES
-    Incluye instalación de fuentes y configuración de perfiles de PowerShell
+    Incluye instalacion de fuentes y configuracion de perfiles de PowerShell
 #>
 
 function Initialize-WindowsTerminalModule {
     [CmdletBinding()]
     param()
     
-    Write-Log "Iniciando configuración de Windows Terminal..."
+    Write-Log "Iniciando configuracion de Windows Terminal..."
     
     # Paso 1: Instalar Windows Terminal
     Install-WindowsTerminal
@@ -25,17 +25,17 @@ function Initialize-WindowsTerminalModule {
     # Paso 4: Configurar perfil de PowerShell
     Set-PowerShellProfile
     
-    Write-Log "Configuración de Windows Terminal completada"
+    Write-Log "Configuracion de Windows Terminal completada"
 }
 
 function Install-WindowsTerminal {
-    Write-Log "Verificando instalación de Windows Terminal..."
+    Write-Log "Verificando instalacion de Windows Terminal..."
     
     # Verificar si Windows Terminal ya está instalado
     $windowsTerminal = Get-AppxPackage -Name "Microsoft.WindowsTerminal" -ErrorAction SilentlyContinue
     
     if ($windowsTerminal) {
-        Write-Log "Windows Terminal ya está instalado (Versión: $($windowsTerminal.Version))"
+        Write-Log "Windows Terminal ya esta instalado (Version: $($windowsTerminal.Version))"
         return $true
     }
     
@@ -55,8 +55,8 @@ function Install-WindowsTerminal {
             }
         }
         
-        # Método alternativo usando PowerShell
-        Write-Log "Intentando instalación alternativa..."
+        # Metodo alternativo usando PowerShell
+        Write-Log "Intentando instalacion alternativa..."
         
         try {
             # Buscar en Microsoft Store
@@ -66,21 +66,21 @@ function Install-WindowsTerminal {
             Start-Process "ms-windows-store://pdp/?productid=9N0DX20HK701"
             
             Write-Log "Se ha abierto Microsoft Store. Por favor, instale Windows Terminal manualmente."
-            Write-Log "Presione cualquier tecla cuando haya completado la instalación..."
+            Write-Log "Presione cualquier tecla cuando haya completado la instalacion..."
             Read-Host
             
-            # Verificar instalación
+            # Verificar instalacion
             $windowsTerminal = Get-AppxPackage -Name "Microsoft.WindowsTerminal" -ErrorAction SilentlyContinue
             if ($windowsTerminal) {
                 Write-Log "Windows Terminal instalado correctamente"
                 return $true
             } else {
-                Write-Log "No se pudo verificar la instalación de Windows Terminal" -Level "WARNING"
+                Write-Log "No se pudo verificar la instalacion de Windows Terminal" -Level "WARNING"
                 return $false
             }
         }
         catch {
-            Write-Log "Error en instalación alternativa: $($_.Exception.Message)" -Level "ERROR"
+            Write-Log "Error en instalacion alternativa: $($_.Exception.Message)" -Level "ERROR"
             return $false
         }
     }
@@ -101,7 +101,7 @@ function Install-TerminalFonts {
     # Verificar si existe la carpeta de fuentes
     if (-not (Test-Path $projectFontsPath)) {
         Write-Log "Carpeta 'Fonts' no encontrada en: $projectFontsPath" -Level "WARNING"
-        Write-Log "Creando carpeta de fuentes vacía. Agregue archivos .ttf o .otf a esta carpeta." -Level "INFO"
+        Write-Log "Creando carpeta de fuentes vacia. Agregue archivos .ttf o .otf a esta carpeta." -Level "INFO"
         New-Item -Path $projectFontsPath -ItemType Directory -Force | Out-Null
         return $false
     }
@@ -111,7 +111,7 @@ function Install-TerminalFonts {
     
     if ($fontFiles.Count -eq 0) {
         Write-Log "No se encontraron archivos de fuentes (.ttf o .otf) en la carpeta: $projectFontsPath" -Level "WARNING"
-        Write-Log "Agregue archivos de fuentes a la carpeta 'Fonts' para instalarlas automáticamente." -Level "INFO"
+        Write-Log "Agregue archivos de fuentes a la carpeta 'Fonts' para instalarlas automaticamente." -Level "INFO"
         return $false
     }
     
@@ -128,7 +128,7 @@ function Install-TerminalFonts {
             $systemFontsPath = "$env:SystemRoot\Fonts"
             $targetPath = Join-Path $systemFontsPath $fontFile.Name
             
-            # Verificar si la fuente ya está instalada
+            # Verificar si la fuente ya esta instalada
             if (Test-Path $targetPath) {
                 Write-Log "Fuente ya instalada: $($fontFile.Name)" -Level "INFO"
                 $skippedCount++
@@ -175,8 +175,8 @@ function Install-TerminalFonts {
         }
     }
     
-    # Resumen de instalación
-    Write-Log "=== Resumen de Instalación de Fuentes ==="
+    # Resumen de instalacion
+    Write-Log "=== Resumen de Instalacion de Fuentes ==="
     Write-Log "Fuentes instaladas: $installedCount"
     Write-Log "Fuentes omitidas (ya instaladas): $skippedCount"
     Write-Log "Total procesadas: $($fontFiles.Count)"
@@ -185,34 +185,34 @@ function Install-TerminalFonts {
         Write-Log "Algunas fuentes pueden requerir reiniciar las aplicaciones para aparecer disponibles." -Level "INFO"
     }
     
-    Write-Log "Instalación de fuentes completada"
+    Write-Log "Instalacion de fuentes completada"
     return $true
 }
 
 function Set-WindowsTerminalSettings {
     Write-Log "Configurando settings de Windows Terminal..."
     
-    # Ruta del archivo de configuración
+    # Ruta del archivo de configuracion
     $settingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
     
     # Verificar si existe el directorio
     $settingsDir = Split-Path $settingsPath -Parent
     if (-not (Test-Path $settingsDir)) {
-        Write-Log "Directorio de configuración no encontrado. Asegúrese de que Windows Terminal esté instalado." -Level "WARNING"
+        Write-Log "Directorio de configuracion no encontrado. Asegurese de que Windows Terminal este instalado." -Level "WARNING"
         return $false
     }
     
-    # Obtener la ruta del archivo de configuración del proyecto
+    # Obtener la ruta del archivo de configuracion del proyecto
     $moduleScriptPath = $PSScriptRoot
     $projectRoot = Split-Path $moduleScriptPath -Parent
     $configFilePath = Join-Path $projectRoot "Config\terminal-settings.json"
     
-    # Verificar si existe el archivo de configuración
+    # Verificar si existe el archivo de configuracion
     if (-not (Test-Path $configFilePath)) {
-        Write-Log "Archivo de configuración no encontrado: $configFilePath" -Level "ERROR"
-        Write-Log "Usando configuración predeterminada..." -Level "WARNING"
+        Write-Log "Archivo de configuracion no encontrado: $configFilePath" -Level "ERROR"
+        Write-Log "Usando configuracion predeterminada..." -Level "WARNING"
         
-        # Configuración predeterminada de respaldo
+        # Configuracion predeterminada de respaldo
         $customSettings = @{
             '$help' = 'https://aka.ms/terminal-documentation'
             '$schema' = 'https://aka.ms/terminal-profiles-schema'
@@ -251,16 +251,16 @@ function Set-WindowsTerminalSettings {
     }
     else {
         try {
-            Write-Log "Cargando configuración desde: $configFilePath"
+            Write-Log "Cargando configuracion desde: $configFilePath"
             $configContent = Get-Content -Path $configFilePath -Raw -Encoding UTF8
-            $customSettings = $configContent | ConvertFrom-Json -AsHashtable
-            Write-Log "Configuración cargada correctamente desde archivo"
+            $customSettings = $configContent | ConvertFrom-Json
+            Write-Log "Configuracion cargada correctamente desde archivo"
         }
         catch {
-            Write-Log "Error leyendo archivo de configuración: $($_.Exception.Message)" -Level "ERROR"
-            Write-Log "Usando configuración predeterminada..." -Level "WARNING"
+            Write-Log "Error leyendo archivo de configuracion: $($_.Exception.Message)" -Level "ERROR"
+            Write-Log "Usando configuracion predeterminada..." -Level "WARNING"
             
-            # Configuración predeterminada de respaldo
+            # Configuracion predeterminada de respaldo
             $customSettings = @{
                 '$help' = 'https://aka.ms/terminal-documentation'
                 '$schema' = 'https://aka.ms/terminal-profiles-schema'
@@ -307,9 +307,9 @@ function Set-WindowsTerminalSettings {
             Write-Log "Backup creado: $backupPath"
         }
         
-        # Escribir nueva configuración
+        # Escribir nueva configuracion
         $customSettings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Encoding UTF8
-        Write-Log "Configuración de Windows Terminal aplicada correctamente"
+        Write-Log "Configuracion de Windows Terminal aplicada correctamente"
         return $true
     }
     catch {
@@ -329,14 +329,14 @@ function Set-PowerShellProfile {
     # Verificar si existe el archivo de perfil personalizado
     if (-not (Test-Path $sourceProfilePath)) {
         Write-Log "Archivo de perfil no encontrado: $sourceProfilePath" -Level "ERROR"
-        Write-Log "Usando configuración predeterminada..." -Level "WARNING"
+        Write-Log "Usando configuracion predeterminada..." -Level "WARNING"
         
-        # Contenido de perfil básico de respaldo
+        # Contenido de perfil basico de respaldo
         $profileContent = @'
-# Perfil básico de PowerShell para WinAutoConfigure
+# Perfil basico de PowerShell para WinAutoConfigure
 # Archivo de perfil personalizado no encontrado
 
-# Configuración básica de colores
+# Configuracion basica de colores
 $Host.UI.RawUI.BackgroundColor = "DarkBlue"
 $Host.UI.RawUI.ForegroundColor = "White"
 
@@ -354,14 +354,14 @@ Write-Host ""
         }
         catch {
             Write-Log "Error leyendo archivo de perfil: $($_.Exception.Message)" -Level "ERROR"
-            Write-Log "Usando configuración predeterminada..." -Level "WARNING"
+            Write-Log "Usando configuracion predeterminada..." -Level "WARNING"
             
-            # Contenido de perfil básico de respaldo
+            # Contenido de perfil basico de respaldo
             $profileContent = @'
-# Perfil básico de PowerShell para WinAutoConfigure
+# Perfil basico de PowerShell para WinAutoConfigure
 # Error al cargar archivo de perfil personalizado
 
-# Configuración básica de colores
+# Configuracion basica de colores
 $Host.UI.RawUI.BackgroundColor = "DarkBlue"
 $Host.UI.RawUI.ForegroundColor = "White"
 
@@ -373,12 +373,15 @@ Write-Host ""
         }
     }
     
-    # Crear perfil para Windows PowerShell
-    $profilePath = $PROFILE.AllUsersAllHosts
+    # Crear perfil para Windows PowerShell (usuario actual)
+    $profilePath = $PROFILE.CurrentUserAllHosts
     $profileDir = Split-Path $profilePath -Parent
     
+    # Asegurar que el directorio del perfil existe
     if (-not (Test-Path $profileDir)) {
+        Write-Log "Creando directorio de perfil de PowerShell: $profileDir" -Level "INFO"
         New-Item -Path $profileDir -ItemType Directory -Force | Out-Null
+        Write-Log "Directorio de perfil creado exitosamente" -Level "SUCCESS"
     }
     
     try {
@@ -390,8 +393,11 @@ Write-Host ""
             $coreProfilePath = "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
             $coreProfileDir = Split-Path $coreProfilePath -Parent
             
+            # Asegurar que el directorio del perfil de PowerShell Core existe
             if (-not (Test-Path $coreProfileDir)) {
+                Write-Log "Creando directorio de perfil de PowerShell Core: $coreProfileDir" -Level "INFO"
                 New-Item -Path $coreProfileDir -ItemType Directory -Force | Out-Null
+                Write-Log "Directorio de perfil de PowerShell Core creado exitosamente" -Level "SUCCESS"
             }
             
             Set-Content -Path $coreProfilePath -Value $profileContent -Encoding UTF8

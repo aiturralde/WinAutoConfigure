@@ -29,6 +29,7 @@ function Initialize-WindowsSettingsModule {
     Set-UpdateSettings
     
     Write-Log "Configuración de Windows 11 completada"
+    return $true
 }
 
 function Set-RegionalSettings {
@@ -95,10 +96,19 @@ function Set-PerformanceSettings {
         Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" -Name "VisualFXSetting" -Value 1 -Type DWord
         
         # Configurar archivos de paginación automático
-        $cs = Get-WmiObject -Class Win32_ComputerSystem
-        if (-not $cs.AutomaticManagedPagefile) {
-            $cs.AutomaticManagedPagefile = $true
-            $cs.Put()
+        try {
+            $cs = Get-WmiObject -Class Win32_ComputerSystem
+            if (-not $cs.AutomaticManagedPagefile) {
+                $cs.AutomaticManagedPagefile = $true
+                $cs.Put()
+                Write-Log "Archivo de paginación configurado a automático"
+            } else {
+                Write-Log "Archivo de paginación ya está configurado como automático"
+            }
+        }
+        catch {
+            Write-Log "No se pudo configurar el archivo de paginación automático: $($_.Exception.Message)" -Level "WARNING"
+            Write-Log "Esta configuración se puede ajustar manualmente en Configuración del sistema > Rendimiento > Memoria virtual" -Level "INFO"
         }
         
         Write-Log "Optimizaciones de máximo rendimiento aplicadas (PC de altas prestaciones)"

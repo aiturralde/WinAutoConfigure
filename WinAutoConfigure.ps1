@@ -12,7 +12,10 @@ param(
     [switch]$ValidateOnly = $false,
     
     [Parameter(Mandatory=$false)]
-    [switch]$ForceRefresh = $false
+    [switch]$ForceRefresh = $false,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$DiagnosticReport = $false
 )
 
 # =====================================================================================
@@ -30,8 +33,14 @@ Import-Module (Join-Path $ModulesPath "Common-ProgressTracking.psm1") -Force
 
 # Inicializar módulos
 Initialize-CacheModule
-Initialize-ValidationModule
 Initialize-ProgressModule
+
+# Verificar que Initialize-ValidationModule esté disponible
+if (Get-Command Initialize-ValidationModule -ErrorAction SilentlyContinue) {
+    Initialize-ValidationModule
+} else {
+    Write-Log "Initialize-ValidationModule no disponible, continuando..." -Level "WARNING"
+}
 
 # =====================================================================================
 # CLASE PRINCIPAL
@@ -72,29 +81,121 @@ class WinAutoConfiguration {
             # Usar las funciones del módulo de validación
             $requirements = Test-SystemRequirements
             
+            # Mostrar información detallada de la validación
+            if ($requirements.Details) {
+                Write-Log "=== INFORMACION DEL SISTEMA ===" -Level "INFO"
+                
+                if ($requirements.Details.OSName) {
+                    Write-Log "Sistema Operativo: $($requirements.Details.OSName)" -Level "INFO"
+                }
+                if ($requirements.Details.OSVersion) {
+                    Write-Log "Versión del SO: $($requirements.Details.OSVersion)" -Level "INFO"
+                }
+                if ($requirements.Details.BuildNumber) {
+                    Write-Log "Build Number: $($requirements.Details.BuildNumber)" -Level "INFO"
+                }
+                if ($requirements.Details.PSVersion) {
+                    Write-Log "PowerShell: v$($requirements.Details.PSVersion)" -Level "INFO"
+                }
+                if ($requirements.Details.CurrentUser) {
+                    Write-Log "Usuario actual: $($requirements.Details.CurrentUser)" -Level "INFO"
+                }
+                if ($requirements.Details.TotalRAM) {
+                    Write-Log "Memoria RAM: $($requirements.Details.TotalRAM) GB" -Level "INFO"
+                }
+                if ($requirements.Details.FreeSpace -and $requirements.Details.TotalSpace) {
+                    Write-Log "Espacio en disco: $($requirements.Details.FreeSpace) GB libres de $($requirements.Details.TotalSpace) GB" -Level "INFO"
+                }
+                
+                Write-Log "=== RESULTADOS DE VALIDACION ===" -Level "INFO"
+            }
+            
+            # Verificar cada requisito y proporcionar mensajes específicos
+            $validationPassed = $true
+            
             if (-not $requirements.AdminRights) {
-                Write-Log "Se requieren permisos de administrador" -Level "ERROR"
-                return $false
+                Write-Log "❌ FALLA: Se requieren permisos de administrador" -Level "ERROR"
+                Write-Log "   Solución: Ejecute el script desde una ventana de PowerShell como administrador" -Level "ERROR"
+                $validationPassed = $false
+            } else {
+                Write-Log "✅ Permisos de administrador: OK" -Level "SUCCESS"
             }
             
             if (-not $requirements.PowerShellVersion) {
-                Write-Log "Se requiere PowerShell 5.1 o superior" -Level "ERROR"
-                return $false
+                Write-Log "❌ FALLA: Se requiere PowerShell 5.1 o superior" -Level "ERROR"
+                if ($requirements.Details.PSVersion) {
+                    Write-Log "   Versión actual: $($requirements.Details.PSVersion)" -Level "ERROR"
+                }
+                Write-Log "   Solución: Actualice PowerShell a la versión 5.1 o superior" -Level "ERROR"
+                $validationPassed = $false
+            } else {
+                Write-Log "✅ Versión de PowerShell: OK" -Level "SUCCESS"
             }
             
             if (-not $requirements.WindowsVersion) {
-                Write-Log "Se requiere Windows 10 v1909 o superior" -Level "ERROR"
-                return $false
+                Write-Log "❌ FALLA: Se requiere Windows 10 v1909 o superior" -Level "ERROR"
+                if ($requirements.Details.OSName) {
+                    Write-Log "   Sistema actual: $($requirements.Details.OSName)" -Level "ERROR"
+                }
+                if ($requirements.Details.OSVersion) {
+                    Write-Log "   Versión actual: $($requirements.Details.OSVersion)" -Level "ERROR"
+                }
+                Write-Log "   Solución: Actualice a una versión compatible de Windows" -Level "ERROR"
+                $validationPassed = $false
+            } else {
+                Write-Log "✅ Versión de Windows: OK" -Level "SUCCESS"
             }
             
             if (-not $requirements.DiskSpace) {
-                Write-Log "Poco espacio en disco disponible" -Level "WARNING"
+                Write-Log "⚠️  ADVERTENCIA: Poco espacio en disco disponible" -Level "WARNING"
+                if ($requirements.Details.FreeSpace) {
+                    Write-Log "   Espacio libre: $($requirements.Details.FreeSpace) GB" -Level "WARNING"
+                }
+                Write-Log "   Recomendación: Libere espacio en disco antes de continuar" -Level "WARNING"
+                # No fallar por espacio en disco, solo advertir
+            } else {
+                Write-Log "✅ Espacio en disco: OK" -Level "SUCCESS"
             }
             
-            return $requirements.OverallStatus
+            if (-not $requirements.MemoryRequirement) {
+                Write-Log "⚠️  ADVERTENCIA: Memoria RAM limitada" -Level "WARNING"
+                if ($requirements.Details.TotalRAM) {
+                    Write-Log "   RAM disponible: $($requirements.Details.TotalRAM) GB" -Level "WARNING"
+                }
+                Write-Log "   Recomendación: El rendimiento puede verse afectado" -Level "WARNING"
+                # No fallar por RAM limitada, solo advertir
+            } else {
+                Write-Log "✅ Memoria RAM: OK" -Level "SUCCESS"
+            }
+            
+            # Mostrar errores específicos si los hay
+            if ($requirements.Details.OSError) {
+                Write-Log "Error obteniendo información del SO: $($requirements.Details.OSError)" -Level "ERROR"
+            }
+            if ($requirements.Details.PSError) {
+                Write-Log "Error obteniendo información de PowerShell: $($requirements.Details.PSError)" -Level "ERROR"
+            }
+            if ($requirements.Details.AdminError) {
+                Write-Log "Error validando permisos: $($requirements.Details.AdminError)" -Level "ERROR"
+            }
+            if ($requirements.Details.CriticalError) {
+                Write-Log "Error crítico durante validación: $($requirements.Details.CriticalError)" -Level "ERROR"
+                $validationPassed = $false
+            }
+            
+            if ($validationPassed) {
+                Write-Log "✅ Todas las validaciones críticas pasaron correctamente" -Level "SUCCESS"
+            } else {
+                Write-Log "❌ Una o más validaciones críticas fallaron" -Level "ERROR"
+                Write-Log "   Consulte los mensajes anteriores para soluciones específicas" -Level "ERROR"
+            }
+            
+            return $validationPassed
+            
         }
         catch {
-            Write-Log "Error durante validación: $($_.Exception.Message)" -Level "ERROR"
+            Write-Log "Error crítico durante validación: $($_.Exception.Message)" -Level "ERROR"
+            Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
             return $false
         }
     }
@@ -270,12 +371,80 @@ function Test-Prerequisites {
     return $true
 }
 
+function New-DiagnosticReport {
+    Write-Host "=== REPORTE DE DIAGNOSTICO WINAUTOCONFIGURE ===" -ForegroundColor Cyan
+    Write-Host ""
+    
+    # Sistema operativo
+    Write-Host "SISTEMA OPERATIVO:" -ForegroundColor Green
+    $osInfo = Get-WmiObject -Class Win32_OperatingSystem -ErrorAction SilentlyContinue
+    if ($osInfo) {
+        Write-Host "  Nombre: $($osInfo.Caption)" -ForegroundColor White
+        Write-Host "  Version: $($osInfo.Version)" -ForegroundColor White
+        $isCompatible = [Version]$osInfo.Version -ge [Version]"10.0.10240"
+        $status = if ($isCompatible) { "Compatible" } else { "No Compatible" }
+        Write-Host "  Estado: $status" -ForegroundColor $(if ($isCompatible) { "Green" } else { "Red" })
+    }
+    
+    Write-Host ""
+    
+    # PowerShell
+    Write-Host "POWERSHELL:" -ForegroundColor Green
+    Write-Host "  Version: $($PSVersionTable.PSVersion)" -ForegroundColor White
+    $isPSCompatible = $PSVersionTable.PSVersion.Major -ge 5
+    $status = if ($isPSCompatible) { "Compatible" } else { "No Compatible" }
+    Write-Host "  Estado: $status" -ForegroundColor $(if ($isPSCompatible) { "Green" } else { "Red" })
+    
+    Write-Host ""
+    
+    # Permisos
+    Write-Host "PERMISOS:" -ForegroundColor Green
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object System.Security.Principal.WindowsPrincipal($currentUser)
+    $isAdmin = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    
+    Write-Host "  Usuario: $($currentUser.Name)" -ForegroundColor White
+    $status = if ($isAdmin) { "Administrador" } else { "Usuario Estandar" }
+    Write-Host "  Estado: $status" -ForegroundColor $(if ($isAdmin) { "Green" } else { "Red" })
+    
+    if (-not $isAdmin) {
+        Write-Host "  SOLUCION: Ejecute PowerShell como Administrador" -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "RESUMEN:" -ForegroundColor Green
+    if ($isPSCompatible -and $isAdmin) {
+        Write-Host "Su sistema cumple con todos los requisitos" -ForegroundColor Green
+        Write-Host "   Ejecute: .\WinAutoConfigure.ps1" -ForegroundColor Cyan
+    } else {
+        Write-Host "Su sistema requiere atencion:" -ForegroundColor Red
+        if (-not $isPSCompatible) {
+            Write-Host "   • Actualice PowerShell a v5.1 o superior" -ForegroundColor Yellow
+        }
+        if (-not $isAdmin) {
+            Write-Host "   • Ejecute PowerShell como Administrador" -ForegroundColor Yellow
+        }
+    }
+    
+    return $true
+}
+
 # =====================================================================================
-# EJECUCIÓN PRINCIPAL
+# EJECUCION PRINCIPAL
 # =====================================================================================
+
+# Manejar reporte de diagnostico sin requerir permisos de administrador
+if ($DiagnosticReport) {
+    $reportResult = New-DiagnosticReport
+    exit $(if ($reportResult) { 0 } else { 1 })
+}
 
 # Verificar prerrequisitos básicos
 if (-not (Test-Prerequisites)) {
+    Write-Host ""
+    Write-Host "AYUDA: Para obtener un reporte de diagnóstico detallado, ejecute:" -ForegroundColor Cyan
+    Write-Host ".\WinAutoConfigure.ps1 -DiagnosticReport" -ForegroundColor Cyan
+    Write-Host ""
     exit 1
 }
 

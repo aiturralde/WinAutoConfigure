@@ -353,11 +353,3 @@ function Start-GamingConfiguration {
         return $false
     }
 }
-
-# ==========================================
-# EJECUCIÓN
-# ==========================================
-
-if ($MyInvocation.InvocationName -ne '.') {
-    Start-GamingConfiguration
-}

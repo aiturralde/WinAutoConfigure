@@ -381,6 +381,10 @@ function Initialize-UIHelpersModule {
     
     return $true
 }
+
+function Show-ProgressUpdate {
+    param(
+        [string]$Activity = "WinAutoConfigure",
         [string]$Status,
         [int]$PercentComplete,
         [int]$Id = 1

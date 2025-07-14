@@ -22,8 +22,12 @@ function Install-ApplicationsModule {
         }
     }
     
+    # Obtener la ruta del proyecto
+    $moduleScriptPath = $PSCommandPath
+    $projectRoot = Split-Path (Split-Path $moduleScriptPath -Parent) -Parent
+    
     # Cargar lista de aplicaciones
-    $applicationsFile = Join-Path $ConfigPath "applications.json"
+    $applicationsFile = Join-Path $projectRoot "Config\applications.json"
     if (-not (Test-Path $applicationsFile)) {
         Write-Log "Archivo de aplicaciones no encontrado. Creando archivo ejemplo: $applicationsFile"
         New-ApplicationsJsonTemplate -Path $applicationsFile
@@ -44,11 +48,11 @@ function Install-ApplicationsModule {
     if ($applicationsConfig.PSObject.Properties.Name -contains "windows_features" -and 
         $applicationsConfig.settings.PSObject.Properties.Name -contains "install_windows_features" -and
         $applicationsConfig.settings.install_windows_features) {
-        Install-WindowsFeaturesFromConfig -Config $applicationsConfig
+        Install-WindowsFeaturesFromConfig -Config $applicationsConfig -ProjectRoot $projectRoot
     }
     
     # Instalar aplicaciones
-    Install-ApplicationsFromConfig -Config $applicationsConfig
+    Install-ApplicationsFromConfig -Config $applicationsConfig -ProjectRoot $projectRoot
     
     Write-Log "Instalación de aplicaciones completada"
     return $true
@@ -155,7 +159,10 @@ function New-ApplicationsJsonTemplate {
 }
 
 function Install-ApplicationsFromConfig {
-    param([PSCustomObject]$Config)
+    param(
+        [PSCustomObject]$Config,
+        [string]$ProjectRoot
+    )
     
     Write-Log "Procesando configuración de aplicaciones..."
     
@@ -215,7 +222,11 @@ function Install-ApplicationsFromConfig {
     
     # Guardar log detallado si está habilitado
     if ($Config.settings.log_installations) {
-        $logFile = Join-Path $LogPath "installations_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+        $logPath = Join-Path $ProjectRoot "Logs"
+        if (-not (Test-Path $logPath)) {
+            New-Item -ItemType Directory -Path $logPath -Force | Out-Null
+        }
+        $logFile = Join-Path $logPath "installations_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
         $installResults | ConvertTo-Json -Depth 5 | Set-Content -Path $logFile -Encoding UTF8
         Write-Log "Log detallado guardado en: $logFile"
     }
@@ -291,7 +302,10 @@ function New-SystemRestorePoint {
 }
 
 function Install-WindowsFeaturesFromConfig {
-    param([PSCustomObject]$Config)
+    param(
+        [PSCustomObject]$Config,
+        [string]$ProjectRoot
+    )
     
     Write-Log "Procesando características de Windows..."
     
@@ -353,7 +367,11 @@ function Install-WindowsFeaturesFromConfig {
     
     # Guardar log detallado si está habilitado
     if ($Config.settings.log_installations) {
-        $logFile = Join-Path $LogPath "windows_features_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+        $logPath = Join-Path $ProjectRoot "Logs"
+        if (-not (Test-Path $logPath)) {
+            New-Item -ItemType Directory -Path $logPath -Force | Out-Null
+        }
+        $logFile = Join-Path $logPath "windows_features_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
         $featureResults | ConvertTo-Json -Depth 5 | Set-Content -Path $logFile -Encoding UTF8
         Write-Log "Log detallado de características guardado en: $logFile"
     }
@@ -435,6 +453,3 @@ function Get-AvailableWindowsFeatures {
         return @()
     }
 }
-
-# Exportar funciones principales del módulo
-Export-ModuleMember -Function Install-ApplicationsModule, Get-AvailableWindowsFeatures

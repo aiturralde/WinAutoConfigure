@@ -26,6 +26,7 @@ function Initialize-NetworkSecurityModule {
     Set-NetworkServices
     
     Write-Log "Configuración de red y seguridad completada"
+    return $true
 }
 
 function Set-DefenderSettings {

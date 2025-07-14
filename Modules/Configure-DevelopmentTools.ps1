@@ -29,6 +29,7 @@ function Initialize-DevelopmentToolsModule {
     Install-VSCodeExtensions
     
     Write-Log "Configuración de herramientas de desarrollo completada"
+    return $true
 }
 
 function Set-GitConfiguration {
@@ -42,8 +43,12 @@ function Set-GitConfiguration {
             return
         }
         
+        # Obtener la ruta del proyecto
+        $moduleScriptPath = $PSCommandPath
+        $projectRoot = Split-Path (Split-Path $moduleScriptPath -Parent) -Parent
+        
         # Configuración básica de Git (el usuario puede personalizar después)
-        $configFile = Join-Path $ConfigPath "git-config.json"
+        $configFile = Join-Path $projectRoot "Config\git-config.json"
         
         if (Test-Path $configFile) {
             $gitConfig = Get-Content -Path $configFile -Raw | ConvertFrom-Json
@@ -234,7 +239,10 @@ function Install-VSCodeExtensions {
 
 # Función para crear archivo de configuración de Git
 function New-GitConfigTemplate {
-    $gitConfigPath = Join-Path $ConfigPath "git-config.json"
+    # Obtener la ruta del proyecto
+    $moduleScriptPath = $PSCommandPath
+    $projectRoot = Split-Path (Split-Path $moduleScriptPath -Parent) -Parent
+    $gitConfigPath = Join-Path $projectRoot "Config\git-config.json"
     
     if (-not (Test-Path $gitConfigPath)) {
         $gitConfigTemplate = @{
