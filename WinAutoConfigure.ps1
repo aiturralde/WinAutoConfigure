@@ -246,8 +246,54 @@ class WinAutoConfiguration {
             Write-Host " $status $($steps[$i])" -ForegroundColor $color
         }
         
+        # Mostrar información especial si está en el paso 5 (después del reinicio requerido)
+        if ($this.CurrentStep -eq 5 -and (Test-StepCompleted -StepNumber 4)) {
+            Write-Host ""
+            Write-Host " 💾 PROGRESO RESTAURADO DESDE CACHE" -ForegroundColor Cyan
+            Write-Host " 🔄 Continuando desde donde se quedó..." -ForegroundColor Cyan
+        }
+        
+        # Mostrar próximos pasos si no está completado
+        if ($this.CurrentStep -le 6 -and $this.CurrentStep -ne 7) {
+            Write-Host ""
+            Write-Host " ▶️  SIGUIENTE: Ejecute .\WinAutoConfigure.ps1 -Step $($this.CurrentStep)" -ForegroundColor Cyan
+        }
+        
         Write-Host "===============================================================" -ForegroundColor Green
         Write-Host "`n"
+    }
+
+    [void] ShowRestartMessage([int]$CompletedStep) {
+        $nextStep = $CompletedStep + 1
+        
+        Write-Host ""
+        Write-Host "===============================================================" -ForegroundColor Yellow
+        Write-Host "                    REINICIO REQUERIDO                        " -ForegroundColor Yellow
+        Write-Host "===============================================================" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "✅ PASO $CompletedStep COMPLETADO EXITOSAMENTE" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "🔄 ACCIÓN REQUERIDA:" -ForegroundColor Yellow
+        Write-Host "   Las configuraciones aplicadas requieren reiniciar" -ForegroundColor White
+        Write-Host "   la sesión de PowerShell para tomar efecto." -ForegroundColor White
+        Write-Host ""
+        Write-Host "📋 INSTRUCCIONES:" -ForegroundColor Cyan
+        Write-Host "   1. Cierre esta ventana de PowerShell" -ForegroundColor White
+        Write-Host "   2. Abra una nueva ventana de PowerShell como Administrador" -ForegroundColor White
+        Write-Host "   3. Navegue al directorio:" -ForegroundColor White
+        Write-Host "      cd '$PSScriptRoot'" -ForegroundColor Gray
+        Write-Host "   4. Ejecute el siguiente comando para continuar:" -ForegroundColor White
+        Write-Host "      .\WinAutoConfigure.ps1 -Step $nextStep" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "💾 EL PROGRESO SE HA GUARDADO AUTOMÁTICAMENTE" -ForegroundColor Green
+        Write-Host "   Su progreso actual: $CompletedStep/6 pasos completados" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "ℹ️  NOTA: El cache inteligente recordará su progreso" -ForegroundColor Cyan
+        Write-Host "   No es necesario repetir los pasos anteriores" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "===============================================================" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Log "Usuario debe reiniciar PowerShell después del paso $CompletedStep para continuar con paso $nextStep" -Level "INFO"
     }
 
     [bool] ExecuteStep([int]$StepNumber) {
@@ -260,7 +306,7 @@ class WinAutoConfiguration {
             1 = @{ Module = "Setup-WindowsTerminal.ps1"; Function = "Initialize-WindowsTerminalModule" }
             2 = @{ Module = "Install-Applications.ps1"; Function = "Install-ApplicationsModule" }
             3 = @{ Module = "Configure-WindowsSettings.ps1"; Function = "Initialize-WindowsSettingsModule" }
-            4 = @{ Module = "Configure-NetworkSecurity.ps1"; Function = "Initialize-NetworkSecurityModule" }
+            4 = @{ Module = "Configure-NetworkSecurity.ps1"; Function = "Initialize-NetworkSecurityModule"; RequiresRestart = $true }
             5 = @{ Module = "Configure-DevelopmentTools.ps1"; Function = "Initialize-DevelopmentToolsModule" }
             6 = @{ Module = "Configure-Gaming.ps1"; Function = "Start-GamingConfiguration" }
         }
@@ -283,6 +329,13 @@ class WinAutoConfiguration {
                 if ($result) {
                     Add-CompletedStep -StepNumber $StepNumber
                     $this.SetProgress($StepNumber + 1)
+                    
+                    # Manejar paso especial que requiere reinicio de PowerShell
+                    if ($stepInfo.RequiresRestart) {
+                        $this.ShowRestartMessage($StepNumber)
+                        return $true
+                    }
+                    
                     return $true
                 } else {
                     Write-Log "El módulo $($stepInfo.Module) retornó false" -Level "ERROR"
@@ -305,11 +358,20 @@ class WinAutoConfiguration {
     [bool] ExecuteAllSteps() {
         Write-Log "Iniciando ejecución completa de WinAutoConfigure" -Level "INFO"
         
+        # Mapeo de pasos que requieren reinicio
+        $restartRequiredSteps = @(4)
+        
         # Ejecutar desde el paso actual hasta el final
         for ($step = $this.CurrentStep; $step -le 6; $step++) {
             if (-not $this.ExecuteStep($step)) {
                 Write-Log "Ejecución detenida en el paso $step" -Level "ERROR"
                 return $false
+            }
+            
+            # Si este paso requiere reinicio, detener la ejecución aquí
+            if ($restartRequiredSteps -contains $step) {
+                Write-Log "Ejecución pausada después del paso $step (reinicio requerido)" -Level "INFO"
+                return $true  # Retorna true porque el paso se completó exitosamente
             }
             
             # Pequeña pausa entre pasos
