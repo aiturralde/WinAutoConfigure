@@ -285,6 +285,7 @@ class WinAutoConfiguration {
                     $this.SetProgress($StepNumber + 1)
                     return $true
                 } else {
+                    Write-Log "El módulo $($stepInfo.Module) retornó false" -Level "ERROR"
                     Add-ErrorCount
                     return $false
                 }
@@ -295,6 +296,7 @@ class WinAutoConfiguration {
         }
         catch {
             Write-Log "Error ejecutando paso $StepNumber : $($_.Exception.Message)" -Level "ERROR"
+            Write-Log "Detalles del error: $($_.ScriptStackTrace)" -Level "ERROR"
             Add-ErrorCount
             return $false
         }

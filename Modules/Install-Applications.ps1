@@ -26,21 +26,49 @@ function Install-ApplicationsModule {
     $moduleScriptPath = $PSCommandPath
     $projectRoot = Split-Path (Split-Path $moduleScriptPath -Parent) -Parent
     
-    # Cargar lista de aplicaciones
-    $applicationsFile = Join-Path $projectRoot "Config\applications.json"
-    if (-not (Test-Path $applicationsFile)) {
-        Write-Log "Archivo de aplicaciones no encontrado. Creando archivo ejemplo: $applicationsFile"
-        New-ApplicationsJsonTemplate -Path $applicationsFile
-        Write-Log "Se ha creado un archivo de ejemplo. Modifique la lista de aplicaciones según sus necesidades."
-        return $false
+    # Importar Configuration Manager
+    $configModulePath = Join-Path $projectRoot "Modules\Common-Configuration.psm1"
+    if (Test-Path $configModulePath) {
+        Import-Module $configModulePath -Force
+        Initialize-ConfigurationManager -ConfigRootPath (Join-Path $projectRoot "Config")
     }
     
-    # Leer y validar JSON
-    try {
-        $applicationsConfig = Get-Content -Path $applicationsFile -Raw | ConvertFrom-Json
+    # Cargar configuración con manejo robusto de errores
+    $defaultConfig = @{
+        applications = @{}
+        windows_features = @{}
+        settings = @{
+            continue_on_error = $true
+            create_restore_point = $false
+            log_installations = $true
+            install_windows_features = $false
+        }
     }
-    catch {
-        Write-Log "Error leyendo archivo de aplicaciones: $($_.Exception.Message)" -Level "ERROR"
+    
+    $applicationsConfig = if (Get-Command "Get-ConfigurationSafe" -ErrorAction SilentlyContinue) {
+        Get-ConfigurationSafe -ConfigName "applications" -RequiredKeys @("applications", "settings") -DefaultValues $defaultConfig
+    } else {
+        # Fallback al método original si Configuration Manager no está disponible
+        $applicationsFile = Join-Path $projectRoot "Config\applications.json"
+        if (-not (Test-Path $applicationsFile)) {
+            Write-Log "Archivo de aplicaciones no encontrado. Creando archivo ejemplo: $applicationsFile"
+            New-ApplicationsJsonTemplate -Path $applicationsFile
+            Write-Log "Se ha creado un archivo de ejemplo. Modifique la lista de aplicaciones según sus necesidades."
+            return $false
+        }
+        
+        try {
+            Get-Content -Path $applicationsFile -Raw | ConvertFrom-Json
+        }
+        catch {
+            Write-Log "Error leyendo archivo de aplicaciones: $($_.Exception.Message)" -Level "ERROR"
+            return $false
+        }
+    }
+    
+    # Validar configuración
+    if (-not $applicationsConfig -or -not $applicationsConfig.PSObject.Properties.Name -contains "applications") {
+        Write-Log "Configuración de aplicaciones inválida o vacía" -Level "ERROR"
         return $false
     }
     
@@ -176,9 +204,9 @@ function Install-ApplicationsFromConfig {
     $installResults = @()
     
     # Procesar cada aplicación
-    foreach ($appProperty in $Config.applications.PSObject.Properties) {
-        $appId = $appProperty.Name
-        $shouldInstall = $appProperty.Value
+    foreach ($app in $Config.applications.GetEnumerator()) {
+        $appId = $app.Key
+        $shouldInstall = $app.Value
         
         # Si el valor es false, omitir la aplicación
         if (-not $shouldInstall) {
@@ -319,7 +347,7 @@ function Install-WindowsFeaturesFromConfig {
     $featureResults = @()
     
     # Verificar si hay características habilitadas
-    $enabledFeatures = $Config.windows_features.PSObject.Properties | Where-Object { $_.Value -eq $true }
+    $enabledFeatures = $Config.windows_features.GetEnumerator() | Where-Object { $_.Value -eq $true }
     
     if ($enabledFeatures.Count -eq 0) {
         Write-Log "No hay características de Windows habilitadas para instalar" -Level "INFO"

@@ -1,0 +1,54 @@
+{
+  "defender": {
+    "enabled": true,
+    "real_time_protection": true,
+    "scheduled_scan_time": "02:00:00",
+    "exclusion_paths": [
+      "{USERPROFILE}\\source",
+      "{USERPROFILE}\\repos", 
+      "{USERPROFILE}\\projects",
+      "{USERPROFILE}\\AppData\\Local\\Temp",
+      "C:\\Windows\\Temp"
+    ]
+  },
+  "firewall": {
+    "enabled": true,
+    "enable_all_profiles": true,
+    "development_ports": [
+      {"name": "Node.js Development", "port": 3000, "protocol": "TCP"},
+      {"name": "React Development", "port": 3001, "protocol": "TCP"},
+      {"name": "Angular Development", "port": 4200, "protocol": "TCP"},
+      {"name": "Vue.js Development", "port": 8080, "protocol": "TCP"},
+      {"name": "ASP.NET Development", "port": 5000, "protocol": "TCP"},
+      {"name": "ASP.NET HTTPS Development", "port": 5001, "protocol": "TCP"},
+      {"name": "Vite Development", "port": 5173, "protocol": "TCP"},
+      {"name": "Webpack Dev Server", "port": 8081, "protocol": "TCP"}
+    ]
+  },
+  "dns": {
+    "enabled": true,
+    "primary_dns": "1.1.1.1",
+    "secondary_dns": "1.0.0.1",
+    "clear_cache": true,
+    "apply_to_ethernet_only": true
+  },
+  "network_services": {
+    "enabled": true,
+    "services_to_disable": [
+      {"name": "DiagTrack", "description": "Telemetría de Windows"},
+      {"name": "dmwappushservice", "description": "Mensaje push WAP"},
+      {"name": "WMPNetworkSvc", "description": "Servicio de uso compartido de red de Windows Media Player"}
+    ],
+    "services_to_optimize": [
+      {"name": "Themes", "startup_type": "Automatic", "description": "Temas de Windows"},
+      {"name": "AudioSrv", "startup_type": "Automatic", "description": "Servicio de audio"},
+      {"name": "Spooler", "startup_type": "Automatic", "description": "Cola de impresión"}
+    ]
+  },
+  "settings": {
+    "skip_on_error": false,
+    "verbose_logging": true,
+    "backup_before_changes": false,
+    "validate_after_changes": true
+  }
+}

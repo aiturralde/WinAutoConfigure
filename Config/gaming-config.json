@@ -1,35 +1,62 @@
 {
-  "gaming_settings": {
-    "enable_game_mode": true,
-    "disable_game_bar": false,
-    "enable_hardware_acceleration": true,
-    "create_gaming_power_plan": true,
-    "configure_network_optimizations": true,
-    "apply_performance_optimizations": true
+  "game_mode": {
+    "enabled": true,
+    "auto_game_mode": true,
+    "disable_game_dvr": true,
+    "fullscreen_optimizations": true
   },
-  "performance_settings": {
+  "game_bar": {
+    "enabled": true,
+    "disable_completely": false,
+    "disable_startup_panel": true,
+    "disable_notifications": true,
+    "disable_tips": true
+  },
+  "hardware_acceleration": {
+    "enabled": false,
+    "enable_gpu_scheduling": true,
+    "enable_directx_optimizations": true,
+    "optimize_vram_usage": true,
+    "enable_cpu_optimizations": true,
+    "optimize_memory_management": true
+  },
+  "performance_optimizations": {
+    "enabled": false,
     "disable_windows_search_during_gaming": true,
-    "optimize_memory_management": true,
-    "configure_multimedia_class_scheduler": true,
-    "set_high_performance_gpu_priority": true,
-    "configure_tcp_optimizations": true,
-    "disable_nagle_algorithm": true
+    "optimize_memory_settings": true,
+    "optimize_mmcss": true,
+    "set_gaming_task_priorities": true,
+    "optimize_services": true
   },
-  "compatibility_settings": {
-    "enable_directplay": true,
-    "enable_dotnet_framework_35": true,
-    "add_gaming_folders_to_defender_exclusions": true
+  "network_optimizations": {
+    "enabled": false,
+    "optimize_tcp_settings": true,
+    "optimize_network_adapters": true,
+    "disable_nagle_algorithm": true,
+    "optimize_qos_settings": true,
+    "reduce_network_latency": true
   },
-  "power_management": {
-    "create_custom_gaming_plan": true,
+  "power_optimizations": {
+    "enabled": false,
+    "create_gaming_power_plan": true,
+    "activate_gaming_plan": false,
+    "disable_power_throttling": true,
     "disable_usb_selective_suspend": true,
-    "prevent_system_sleep": true,
-    "prevent_disk_timeout": true
+    "set_maximum_processor_state": true
   },
-  "notes": {
-    "description": "Configuración gaming optimizada para Windows 11",
-    "requires_admin": true,
-    "requires_restart": "partial",
-    "optimized_for": "high_performance_gaming_pc"
+  "game_compatibility": {
+    "enabled": true,
+    "enable_directplay": true,
+    "enable_netfx3": true,
+    "configure_legacy_directx": true,
+    "configure_defender_exclusions": false,
+    "enable_32bit_compatibility": true
+  },
+  "settings": {
+    "skip_on_error": true,
+    "verbose_logging": true,
+    "require_restart_notification": true,
+    "validate_admin_rights": true,
+    "validate_windows_version": true
   }
 }

@@ -33,7 +33,7 @@
       "enabled": true,
       "step": 4,
       "name": "Configure-NetworkSecurity",
-      "config_file": null,
+      "config_file": "network-security-config.json",
       "requires_restart": false,
       "estimated_time_minutes": 3
     },
@@ -41,9 +41,9 @@
       "enabled": true,
       "step": 5,
       "name": "Configure-DevelopmentTools",
-      "config_file": "git-config.json",
+      "config_file": "development-tools-config.json",
       "requires_restart": false,
-      "estimated_time_minutes": 5
+      "estimated_time_minutes": 10
     },
     "gaming": {
       "enabled": true,

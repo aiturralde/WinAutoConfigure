@@ -1,0 +1,103 @@
+{
+  "git": {
+    "enabled": true,
+    "config_from_file": true,
+    "default_config": {
+      "core.autocrlf": "true",
+      "core.editor": "code --wait",
+      "merge.tool": "vscode",
+      "mergetool.vscode.cmd": "code --wait $MERGED",
+      "diff.tool": "vscode",
+      "difftool.vscode.cmd": "code --wait --diff $LOCAL $REMOTE",
+      "init.defaultBranch": "main"
+    }
+  },
+  "nodejs": {
+    "enabled": true,
+    "npm_config": {
+      "init-author-name": "Usuario",
+      "init-license": "MIT",
+      "save-exact": "true"
+    },
+    "global_packages": [
+      "npm@latest",
+      "yarn",
+      "pnpm", 
+      "typescript",
+      "@typescript-eslint/eslint-plugin",
+      "eslint",
+      "prettier",
+      "nodemon",
+      "http-server",
+      "live-server",
+      "@angular/cli",
+      "create-react-app",
+      "vue-cli"
+    ]
+  },
+  "python": {
+    "enabled": true,
+    "upgrade_pip": true,
+    "packages": [
+      "virtualenv",
+      "pipenv",
+      "poetry",
+      "black",
+      "flake8",
+      "pylint",
+      "autopep8",
+      "requests",
+      "flask",
+      "django",
+      "fastapi",
+      "jupyter",
+      "pandas",
+      "numpy",
+      "matplotlib",
+      "scikit-learn"
+    ]
+  },
+  "dotnet": {
+    "enabled": true,
+    "trust_dev_certs": true,
+    "global_tools": [
+      "dotnet-ef",
+      "dotnet-aspnet-codegenerator",
+      "dotnet-dev-certs",
+      "dotnet-format",
+      "dotnet-reportgenerator-globaltool",
+      "Microsoft.Web.LibraryManager.Cli",
+      "dotnet-outdated-tool"
+    ]
+  },
+  "vscode": {
+    "enabled": true,
+    "extensions": [
+      "ms-vscode.powershell",
+      "ms-python.python",
+      "ms-dotnettools.csharp",
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "formulahendry.auto-rename-tag",
+      "christian-kohler.path-intellisense",
+      "ms-vscode.vscode-json",
+      "redhat.vscode-yaml",
+      "eamodio.gitlens",
+      "github.copilot",
+      "ms-vscode-remote.remote-containers",
+      "ms-vscode-remote.remote-ssh",
+      "pkief.material-icon-theme",
+      "zhuangtongfa.material-theme",
+      "ms-vscode.azure-account",
+      "ms-azuretools.vscode-docker",
+      "ms-vscode.vscode-node-azure-pack"
+    ]
+  },
+  "settings": {
+    "skip_on_error": true,
+    "verbose_logging": true,
+    "continue_on_tool_missing": true,
+    "create_git_config_template": true
+  }
+}
