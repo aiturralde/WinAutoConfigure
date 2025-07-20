@@ -45,7 +45,7 @@ function Initialize-NetworkSecurityModule {
         $results = @{
             Defender = $false
             Firewall = $false
-            DNS = $false
+            CloudflareWarp = $false
             NetworkServices = $false
         }
         
@@ -65,12 +65,12 @@ function Initialize-NetworkSecurityModule {
             $results.Firewall = $true
         }
         
-        # Paso 3: Configurar DNS
-        if ($Config.dns.enabled) {
-            $results.DNS = Set-DnsSettings -Config $Config.dns
+        # Paso 3: Instalar y configurar Cloudflare WARP
+        if ($Config.cloudflare_warp.enabled) {
+            $results.CloudflareWarp = Install-CloudflareWarp -Config $Config.cloudflare_warp
         } else {
-            Write-Log "Configuración de DNS omitida (deshabilitada en configuración)" -Component "NetworkSecurity"
-            $results.DNS = $true
+            Write-Log "Instalación de Cloudflare WARP omitida (deshabilitada en configuración)" -Component "NetworkSecurity"
+            $results.CloudflareWarp = $true
         }
         
         # Paso 4: Configurar servicios de red
@@ -186,7 +186,7 @@ function Set-FirewallSettings {
     } -Operation "Configurar Windows Firewall" -Component "FirewallConfig" -Severity ([ErrorSeverity]::Medium)
 }
 
-function Set-DnsSettings {
+function Install-CloudflareWarp {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -194,57 +194,116 @@ function Set-DnsSettings {
     )
     
     return Invoke-WithErrorHandling -Action {
-        Write-Log "Configurando DNS..." -Component "DNSConfig"
+        Write-Log "Instalando Cloudflare WARP..." -Component "CloudflareWarp"
         
-        # Preparar servidores DNS
-        $dnsServers = @($Config.primary_dns, $Config.secondary_dns) | Where-Object { $_ }
-        
-        if ($dnsServers.Count -eq 0) {
-            throw "No se especificaron servidores DNS válidos"
+        # Verificar si ya está instalado
+        $existingApp = winget list --id $Config.package_id --exact 2>$null
+        if ($LASTEXITCODE -eq 0 -and $existingApp -match $Config.package_id) {
+            Write-Log "Cloudflare WARP ya está instalado" -Component "CloudflareWarp"
+            
+            # Solo configurar si está habilitado
+            if ($Config.configure_after_install) {
+                return Set-CloudflareWarpConfiguration
+            }
+            return $true
         }
         
-        # Obtener adaptadores de red según configuración
-        $adapterFilter = if ($Config.apply_to_ethernet_only) {
-            { $_.Status -eq "Up" -and $_.MediaType -eq "802.3" }
-        } else {
-            { $_.Status -eq "Up" }
+        # Instalar usando winget
+        Write-Log "Descargando e instalando Cloudflare WARP desde winget..." -Component "CloudflareWarp"
+        
+        $installArgs = @(
+            "install",
+            "--id", $Config.package_id,
+            "--exact",
+            "--silent",
+            "--accept-package-agreements",
+            "--accept-source-agreements"
+        )
+        
+        $process = Start-Process -FilePath "winget" -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+        
+        if ($process.ExitCode -ne 0) {
+            throw "Error durante la instalación de Cloudflare WARP (código: $($process.ExitCode))"
         }
         
-        $adapters = Get-NetAdapter | Where-Object $adapterFilter
+        Write-Log "Cloudflare WARP instalado exitosamente" -Component "CloudflareWarp"
         
-        if ($adapters.Count -eq 0) {
-            Write-Log "No se encontraron adaptadores de red activos" -Component "DNSConfig" -Level "WARNING"
+        # Esperar un momento para que el servicio se inicie
+        if ($Config.wait_for_installation) {
+            Write-Log "Esperando a que Cloudflare WARP se inicialice..." -Component "CloudflareWarp"
+            Start-Sleep -Seconds 10
+        }
+        
+        # Configurar después de la instalación
+        if ($Config.configure_after_install) {
+            return Set-CloudflareWarpConfiguration
+        }
+        
+        return $true
+        
+    } -Operation "Instalar Cloudflare WARP" -Component "CloudflareWarp" -Severity ([ErrorSeverity]::Medium)
+}
+
+function Set-CloudflareWarpConfiguration {
+    [CmdletBinding()]
+    param()
+    
+    return Invoke-WithErrorHandling -Action {
+        Write-Log "Configurando Cloudflare WARP..." -Component "CloudflareWarp"
+        
+        # Buscar el ejecutable de WARP
+        $warpPaths = @(
+            "${env:ProgramFiles}\Cloudflare\Cloudflare WARP\warp-cli.exe",
+            "${env:ProgramFiles(x86)}\Cloudflare\Cloudflare WARP\warp-cli.exe",
+            "${env:LOCALAPPDATA}\Programs\Cloudflare\Cloudflare WARP\warp-cli.exe"
+        )
+        
+        $warpCliPath = $null
+        foreach ($path in $warpPaths) {
+            if (Test-Path $path) {
+                $warpCliPath = $path
+                break
+            }
+        }
+        
+        if (-not $warpCliPath) {
+            Write-Log "No se encontró warp-cli.exe. Cloudflare WARP puede necesitar reinicio o instalación manual." -Component "CloudflareWarp" -Level "WARNING"
+            return $true  # No fallar completamente, solo advertir
+        }
+        
+        Write-Log "Cloudflare WARP CLI encontrado en: $warpCliPath" -Component "CloudflareWarp"
+        
+        # Registrar el cliente (puede fallar si ya está registrado)
+        try {
+            $registerResult = & $warpCliPath register 2>&1
+            Write-Log "Cliente WARP registrado" -Component "CloudflareWarp"
+        }
+        catch {
+            Write-Log "Cliente WARP ya registrado o error en registro (normal en algunos casos)" -Component "CloudflareWarp" -Level "INFO"
+        }
+        
+        # Conectar WARP
+        try {
+            $connectResult = & $warpCliPath connect 2>&1
+            Write-Log "Cloudflare WARP conectado exitosamente" -Component "CloudflareWarp" -Level "SUCCESS"
+        }
+        catch {
+            Write-Log "Error conectando WARP: $($_.Exception.Message)" -Component "CloudflareWarp" -Level "WARNING"
             return $false
         }
         
-        # Configurar DNS en adaptadores
-        $successfulAdapters = 0
-        foreach ($adapter in $adapters) {
-            try {
-                Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ServerAddresses $dnsServers -ErrorAction Stop
-                Write-Log "DNS configurado para adaptador: $($adapter.Name) ($($dnsServers -join ', '))" -Component "DNSConfig"
-                $successfulAdapters++
-            }
-            catch {
-                Write-Log "Error configurando DNS en adaptador '$($adapter.Name)': $($_.Exception.Message)" -Component "DNSConfig" -Level "WARNING"
-            }
+        # Verificar estado
+        try {
+            $statusResult = & $warpCliPath status 2>&1
+            Write-Log "Estado WARP: $statusResult" -Component "CloudflareWarp"
+        }
+        catch {
+            Write-Log "No se pudo verificar estado de WARP" -Component "CloudflareWarp" -Level "WARNING"
         }
         
-        # Limpiar caché DNS si está habilitado
-        if ($Config.clear_cache) {
-            try {
-                Clear-DnsClientCache
-                Write-Log "Caché DNS limpiado" -Component "DNSConfig"
-            }
-            catch {
-                Write-Log "Error limpiando caché DNS: $($_.Exception.Message)" -Component "DNSConfig" -Level "WARNING"
-            }
-        }
+        return $true
         
-        Write-Log "DNS configurado exitosamente ($successfulAdapters adaptadores configurados)" -Component "DNSConfig" -Level "SUCCESS"
-        return $successfulAdapters -gt 0
-        
-    } -Operation "Configurar DNS" -Component "DNSConfig" -Severity ([ErrorSeverity]::Medium)
+    } -Operation "Configurar Cloudflare WARP" -Component "CloudflareWarp" -Severity ([ErrorSeverity]::Low)
 }
 
 function Set-NetworkServices {

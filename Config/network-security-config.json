@@ -25,12 +25,13 @@
       {"name": "Webpack Dev Server", "port": 8081, "protocol": "TCP"}
     ]
   },
-  "dns": {
+  "cloudflare_warp": {
     "enabled": true,
-    "primary_dns": "1.1.1.1",
-    "secondary_dns": "1.0.0.1",
-    "clear_cache": true,
-    "apply_to_ethernet_only": true
+    "auto_connect": true,
+    "install_method": "winget",
+    "package_id": "Cloudflare.Warp",
+    "wait_for_installation": true,
+    "configure_after_install": true
   },
   "network_services": {
     "enabled": true,

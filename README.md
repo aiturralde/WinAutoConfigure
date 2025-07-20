@@ -1,4 +1,4 @@
-# WinAutoConfigure v3.0
+# WinAutoConfigure v3.1
 
 [![GitHub Release](https://img.shields.io/github/v/release/aiturralde/WinAutoConfigure?style=for-the-badge)](https://github.com/aiturralde/WinAutoConfigure/releases)
 [![PowerShell Version](https://img.shields.io/badge/PowerShell-5.1%2B%20%7C%207%2B-blue?style=for-the-badge&logo=powershell)](https://github.com/PowerShell/PowerShell)
@@ -11,7 +11,7 @@ WinAutoConfigure es una herramienta de configuración automática de última gen
 
 ## ✨ ¿Qué hace WinAutoConfigure?
 
-**WinAutoConfigure v3.0** es la solución que uso para la configuración automática de Windows, incorporando:
+**WinAutoConfigure v3.1** es la solución que uso para la configuración automática de Windows, incorporando:
 
 ### 🏗️ **Arquitectura Empresarial**
 - **Orientada a Objetos**: Diseño modular con clases PowerShell
@@ -24,7 +24,7 @@ WinAutoConfigure es una herramienta de configuración automática de última gen
 - **🖥️ Terminal Moderno**: Windows Terminal con perfiles optimizados y fuentes Nerd
 - **📦 Aplicaciones Esenciales**: Instalación vía Winget de 40+ herramientas curadas
 - **⚙️ Optimización del Sistema**: Configuraciones de rendimiento y personalización avanzada
-- **🛡️ Seguridad de Red**: Configuración de firewall Windows Defender y protecciones
+- **🛡️ Seguridad de Red**: Firewall Windows Defender + Cloudflare WARP integrado
 - **💻 Entorno de Desarrollo**: Stack completo para múltiples lenguajes y frameworks
 - **🎮 Optimización Gaming**: Configuraciones específicas para máximo rendimiento en juegos
 
@@ -114,7 +114,7 @@ WinAutoConfigure ejecuta **6 pasos modulares** que pueden ejecutarse independien
 | **1** | **🖥️ Windows Terminal** | Perfiles personalizados, fuentes Nerd Font, temas, PowerShell profile | ~3 min |
 | **2** | **📦 Aplicaciones** | 40+ herramientas vía Winget: VS Code, Git, Docker, etc. | ~15 min |
 | **3** | **⚙️ Sistema Windows** | Optimizaciones de rendimiento, Explorer, taskbar, privacidad | ~5 min |
-| **4** | **🛡️ Seguridad de Red** | Windows Defender, firewall, protecciones avanzadas | ~3 min |
+| **4** | **🛡️ Seguridad de Red** | Windows Defender, firewall + Cloudflare WARP (VPN/DNS) | ~3 min |
 | **5** | **💻 Desarrollo** | SDKs, runtimes, herramientas CLI, configuraciones IDE | ~10 min |
 | **6** | **🎮 Gaming** | Optimizaciones GPU, Xbox Game Bar, configuraciones de alto rendimiento | ~2 min |
 
@@ -155,8 +155,8 @@ Google.Chrome, Mozilla.Firefox, Microsoft.Edge.Dev
 #### **Paso 4: Seguridad de Red** 🛡️
 - **Windows Defender**: Configuración óptima de antivirus
 - **Firewall**: Reglas personalizadas para desarrollo
-- **SmartScreen**: Configuración balanceada seguridad/usabilidad
-- **Network Protection**: Protección contra amenazas de red
+- **Cloudflare WARP**: VPN integrada + DNS seguro (1.1.1.1) automático
+- **Network Protection**: Protección contra amenazas y malware
 
 #### **Paso 5: Herramientas de Desarrollo** 💻
 - **Runtimes**: .NET, Node.js, Python, Java

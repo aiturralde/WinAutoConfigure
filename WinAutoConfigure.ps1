@@ -1,4 +1,4 @@
-# WinAutoConfigure v3.0 - Script Principal
+# WinAutoConfigure v3.1 - Script Principal
 # Configuración automática para Windows 11 con arquitectura orientada a objetos
 
 param(
@@ -61,7 +61,7 @@ class WinAutoConfiguration {
     [bool] Initialize() {
         try {
             # Inicializar logging
-            Write-Log "Inicializando WinAutoConfiguration v3.0" -Level "INFO"
+            Write-Log "Inicializando WinAutoConfiguration v3.1" -Level "INFO"
             
             # Obtener paso actual desde el módulo de progreso
             $this.CurrentStep = Get-CurrentStep
@@ -222,7 +222,7 @@ class WinAutoConfiguration {
         
         Write-Host "`n" -ForegroundColor Green
         Write-Host "===============================================================" -ForegroundColor Green
-        Write-Host "                 WINAUTOCONFIGURE v3.0                        " -ForegroundColor Green
+        Write-Host "                 WINAUTOCONFIGURE v3.1                        " -ForegroundColor Green
         Write-Host "===============================================================" -ForegroundColor Green
         
         if ($this.CurrentStep -eq 7 -or $this.CurrentStep -gt 6) {
@@ -407,7 +407,7 @@ function Show-WelcomeMessage {
     Write-Host ""
     Write-Host "===============================================================" -ForegroundColor Cyan
     Write-Host "                                                               " -ForegroundColor Cyan
-    Write-Host "               WINAUTOCONFIGURE v3.0                          " -ForegroundColor Cyan
+    Write-Host "               WINAUTOCONFIGURE v3.1                          " -ForegroundColor Cyan
     Write-Host "                                                               " -ForegroundColor Cyan
     Write-Host "          Configuracion Automatica para Windows 11            " -ForegroundColor Cyan
     Write-Host "                                                               " -ForegroundColor Cyan
